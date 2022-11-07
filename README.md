@@ -38,6 +38,7 @@ If you want to power the adapter from the keyboard port, put a jumper on pin hea
 
 ### Din or PS/2 Port
 The PCB can use either a din or a PS/2 port in the same footprint. You can choose which you want to use based on your use case. Recommended use case would be to use the PS/2 port because 6 pin mini din cables are cheap and easy to find.
+
 [<img align="center" alt="Back_PCB" width="380px" src="https://raw.githubusercontent.com/LimeProgramming/USB-2-232-KBD/dev/images/rear_nobg.webp"/>](https://raw.githubusercontent.com/LimeProgramming/USB-2-232-KBD/dev/images/rear_bg.jpg)[<img align="center" alt="Back_PCB" width="380px" src="https://raw.githubusercontent.com/LimeProgramming/USB-2-232-KBD/dev/images/rear_ps2_nobg.webp"/>](https://raw.githubusercontent.com/LimeProgramming/USB-2-232-KBD/dev/images/rear_ps2_bg.jpg)
 
 
