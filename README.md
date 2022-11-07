@@ -2,7 +2,8 @@
 
 # USB-2-232-KBD
  Converts USB mice and USB keyboards to serial mice and XT-AT-PS/2 keyboards.
- 
+  <img align="center" alt="ASSEMBLED_ADAPTER" width="800px" src="https://raw.githubusercontent.com/LimeProgramming/USB-2-232-KBD/dev/images/built.webp"/>
+
 # Development
 In progress, not ready for production
 
