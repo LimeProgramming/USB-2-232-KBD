@@ -1010,7 +1010,7 @@ void term_handle_options(uart_inst_t * com, ushort level1, ushort level2) {
              if ( ret == 32000 )                { post_invalid(com); } 
         else if ( ret == 0 )                    { term_writes_crlf(com, terminal_warn_msg[mouse_data.persistent.language][0]); }   
         else    { 
-          loadPersistentSetDefaults();
+          loadPersistentDefaults();
           term_writes_crlf(com, terminal_warn_msg[mouse_data.persistent.language][6]);
           term_writes_crlf(com, "\n");
           term_writes_crlf(com, terminal_warn_msg[mouse_data.persistent.language][7]);

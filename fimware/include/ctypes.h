@@ -248,13 +248,24 @@ typedef struct  {
   uint8_t ow_scrllock;
   uint8_t ow_capslock;
 
+  // Set your keyboard type (XT type currently not supported)
   // 0 -> for XT | 1 -> AT
   uint8_t kbd_type;
+
+  // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway
+  // Does not apply to AT/ps2 keyboards
+  bool kbd_xtclone;
+
+  // Which scan code set should we use while the adapter is an AT keyboard
+  // This can be overwritten but not saved by the PS/2 command set functions.
+  // XT keyboard mode will use set 1 regardless of this setting.
+  //==-- 1 -> Set 1 | 2 -> set2 (default) | 3 -> set 3 (rarely used)
+  uint8_t kbd_ps2_codeset;
 
 } PERSISTENT_KBD_DATA;
 
 
-extern PERSISTENT_KBD_DATA pkData;
+//extern PERSISTENT_KBD_DATA pkData;
 
 typedef struct {
   // Should the keyboard be scanning?
@@ -283,7 +294,7 @@ typedef struct {
   bool tm_valid;
 
   // Are we using PS2 set 1, 2 or 3
-  // 0x01 -> set 1 | 0x02 -> set 2 | 0x03 -> set 3
+  // 0x00 -> set 1 | 0x01 -> set 2 | 0x02 -> set 3
   uint8_t scancode_set;
 
 } KBD_CMD_SET;
@@ -317,6 +328,9 @@ typedef struct {
   
   // command set data
   KBD_CMD_SET cmd_set;
+
+  // persistent keyboard data, survives reboots.
+  PERSISTENT_KBD_DATA persistent;
 
 } KEYBOARD_DATA;
 

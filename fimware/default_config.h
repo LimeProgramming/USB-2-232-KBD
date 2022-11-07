@@ -165,8 +165,16 @@ static uint8_t default_xtclone = 1 ;            // 0 -> IBM XT | 1 --> XT Clone
 // Which scan code set should we use while the adapter is an AT keyboard
 // This can be overwritten but not saved by the PS/2 command set functions.
 // XT keyboard mode will use set 1 regardless of this setting.
-//==-- 1 -> Set 1 | 2 -> set2 (default) | 3 -> set 3 (rarely used)
-static uint8_t default_ps2codeset = 2;
+// Auto will pick the scan code set based on keyboard type above and the ps2 command set
+//==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set2 | 3 -> set 3 (rarely used)
+static uint8_t default_ps2codeset = 0;
+
+//==-- BIOS LOCK OVERWRITES
+// 0 = auto | 1 = Force on | 2 = Force off
+static uint8_t default_ow_numlock  = 0;
+static uint8_t default_ow_scrllock = 0;
+static uint8_t default_ow_capslock = 0;
+
 
 
 /*---------------------------------------*/

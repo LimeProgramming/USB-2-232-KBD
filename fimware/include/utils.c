@@ -407,9 +407,20 @@ void dinPresentingCallback(uint gpio, uint32_t events) {
 #define FLASH_TARGET_OFFSET (384 * 1024)
 #define FLASH_SECTOR_SIZE_C (1u << 16) // <-- Custom Sector Size
 
-// Load persistent data from flash | Load defaults if no data in flash found
+// Loads the default settings from default_config.h
+void loadPersistentDefaults() {
+  #if KB_ENALBE
+  loadPersistentKBDDefaults();    // Load the kkeyboard default settings from default_config.h
+  #endif
+
+  loadPersistentMOUSEDefaults();  // Load the default settings from default_config.h
+
+  return;
+}
+
+// Load persistent mouse data from flash | Load defaults if no data in flash found
 // There's a pile of if's to try to combat silly users.
-void loadPersistentSetDefaults() {
+void loadPersistentMOUSEDefaults() {
   mouse_data.persistent.firstrun = 0;
   
   // Assume good because I set them.
@@ -484,7 +495,41 @@ void loadPersistentSetDefaults() {
   // Added 1.2.X Language
   if ( (default_language == 0) || (default_language == 1) ) { mouse_data.persistent.language = default_language; }
   else                                                      { mouse_data.persistent.language = 0; }
+}
 
+// Load persistent keyboard data from flash | Load defaults if no data in flash found
+// There's a pile of if's to try to combat silly users.
+void loadPersistentKBDDefaults() {
+  kbd_data.persistent.firstrun = 0;
+
+  // Keyboard Type
+  if ( (default_keyboard_type == 0) || (default_keyboard_type == 1) ) { kbd_data.persistent.kbd_type = default_keyboard_type; }
+  else                                                                { kbd_data.persistent.kbd_type = 1;}
+
+  // Bios lock overwrite, numlock
+  if ( (default_ow_numlock == 0) || (default_ow_numlock == 1) || (default_ow_numlock == 2) )  { kbd_data.persistent.ow_numlock = default_ow_numlock; }
+  else                                                                                        { kbd_data.persistent.ow_numlock = 0; }
+
+  // Bios lock overwrite, scroll lock
+  if ( (default_ow_scrllock == 0) || (default_ow_scrllock == 1) || (default_ow_scrllock == 2) ) { kbd_data.persistent.ow_scrllock = default_ow_scrllock; }
+  else                                                                                          { kbd_data.persistent.ow_scrllock = 0; }
+
+  // Bios lock overwrite, caps lock
+  if ( (default_ow_capslock == 0) || (default_ow_capslock == 1) || (default_ow_capslock == 2) ) { kbd_data.persistent.ow_capslock = default_ow_capslock; }
+  else                                                                                          { kbd_data.persistent.ow_capslock = 0; }
+
+  // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway, does not apply to AT/ps2 keyboards
+  // 0 -> IBM XT | 1 --> XT Clone
+  if ( (default_xtclone == 0) || (default_xtclone == 1) )     { kbd_data.persistent.kbd_xtclone = default_xtclone; }
+  else                                                        { kbd_data.persistent.kbd_xtclone = 1; }
+
+  // Which scan code set should we use while the adapter is an AT keyboard
+  // This can be overwritten but not saved by the PS/2 command set functions.
+  // XT keyboard mode will use set 1 regardless of this setting.
+  // Auto will pick the scan code set based on keyboard type above and the ps2 command set
+  //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set2 | 3 -> set 3 (rarely used)
+  if ( (default_ps2codeset == 0) || (default_ps2codeset == 1) || (default_ps2codeset == 2) || (default_ps2codeset == 3) ) { kbd_data.persistent.kbd_ps2_codeset = default_ps2codeset; }
+  else                                                                                                                    { kbd_data.persistent.kbd_ps2_codeset = 0; }
 }
 
 // Run on launch 
@@ -496,22 +541,41 @@ void initPersistentSet() {
   // Load current settings from flash. A read from blank returns an array of bytes set to "255".
   loadPersistentSet();
 
+  #if KB_ENABLE
+  /* ----- First Run or FW Required Reload ----- */
+  // ==================================================
+  // IF First run or revision number higher than stored revision number, load default
+  if ( mouse_data.persistent.firstrun == 255 || kbd_data.persistent.firstrun == 255 || V_REVISION > mouse_data.persistent.FW_V_REVISION  ) {
+
+    #if DEBUG > 0
+    printf("fristrun mouse: %d\n", mouse_data.persistent.firstrun );  fflush(stdout);
+    printf("fristrun KBD: %d\n", kbd_data.persistent.firstrun );      fflush(stdout);
+    printf("revision: %d\n", mouse_data.persistent.FW_V_REVISION);    fflush(stdout);
+    #endif
+    
+    loadPersistentMOUSEDefaults();  // Load the default settings from default_config.h
+    loadPersistentKBDDefaults();    // Load the kkeyboard default settings from default_config.h
+    savePersistentSet();            // Save new persistent Data
+    machine_reboot();               // Reboot Pico
+  } 
+
+  
+  #else
   /* ----- First Run or FW Required Reload ----- */
   // ==================================================
   // IF First run or revision number higher than stored revision number, load default
   if ( mouse_data.persistent.firstrun == 255 || V_REVISION > mouse_data.persistent.FW_V_REVISION  ) {
 
     #if DEBUG > 0
-
-    printf("fristrun: %d\n", mouse_data.persistent.firstrun ); 
-    printf("revision: %d\n", mouse_data.persistent.FW_V_REVISION);
-
+    printf("fristrun: %d\n", mouse_data.persistent.firstrun );      fflush(stdout);
+    printf("revision: %d\n", mouse_data.persistent.FW_V_REVISION);  fflush(stdout);
     #endif
     
-    loadPersistentSetDefaults();  // Load the default settings from default_config.h
-    savePersistentSet();          // Save new persistent Data
-    machine_reboot();             // Reboot Pico
+    loadPersistentMOUSEDefaults();  // Load the default settings from default_config.h
+    savePersistentSet();            // Save new persistent Data
+    machine_reboot();               // Reboot Pico
   } 
+  #endif
   
   /* ----- If The Firmware Version Has Changed ----- */
   // ==================================================
@@ -569,7 +633,7 @@ void initPersistentSet() {
   #if DEBUG > 0
     printf("Mouse Settings print out\n");
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("FW_V_MAJOR: %d | FW_V_MINOR: %d | FW_V_REVISION: %d | FW_Language: %d\n",
       mouse_data.persistent.FW_V_MAJOR,
@@ -578,7 +642,7 @@ void initPersistentSet() {
       mouse_data.persistent.language
     );
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("xytravel_percentage: %d | xtravel_percentage: %d | ytravel_percentage: %d\n",
       mouse_data.persistent.xytravel_percentage,
@@ -586,14 +650,14 @@ void initPersistentSet() {
       mouse_data.persistent.ytravel_percentage
     );
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("mouse_movt_type: %d | use_cosine_smoothing: %d\n",
       mouse_data.persistent.mouse_movt_type,
       mouse_data.persistent.use_cosine_smoothing
     );
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("mousetype: %d | doublestopbit: %d | baudrate: %d\n",
       mouse_data.persistent.mousetype,
@@ -601,7 +665,7 @@ void initPersistentSet() {
       mouse_data.persistent.baudrate
     );
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("swap_left_right: %d | use_forward_backward: %d | swap_forward_backward: %d\n",
       mouse_data.persistent.swap_left_right,
@@ -609,12 +673,41 @@ void initPersistentSet() {
       mouse_data.persistent.swap_forward_backward
     );
 
-    sleep_ms(5);
+    fflush(stdout);
 
     printf("Invert X: %d | Invert Y: %d\n",
       mouse_data.persistent.invert_x,
       mouse_data.persistent.invert_y
     );
+
+    fflush(stdout);
+
+    #if KB_ENABLE
+
+    printf("======================================\n"); 
+    fflush(stdout);
+
+    printf("Keyboard Persistent Settings print out\n");
+    fflush(stdout);
+
+    printf("Keyboard Type: %s\n", (kbd_data.persistent.kbd_type ? "AT" : "XT") );
+    fflush(stdout);
+
+    printf("XT Compatibility Type: %s\n", (kbd_data.persistent.kbd_xtclone ? "XT CLone" : "ibmXT") );
+    fflush(stdout);
+
+    printf("BIOS LOCK OVERWRITES\n");
+    fflush(stdout);
+
+    printf("Numlock: %d | scrollock: %d | capslock: %d \n",
+      kbd_data.persistent.ow_numlock,
+      kbd_data.persistent.ow_scrllock,
+      kbd_data.persistent.ow_capslock
+    );
+    fflush(stdout);
+
+    #endif // enable keyboard
+
   #endif
 }
 
@@ -674,6 +767,16 @@ void savePersistentSet() {
   // Added Version 1.2.X
   buffer[23] = mouse_data.persistent.language;
 
+  #if KB_ENABLE
+  buffer[128] =  kbd_data.persistent.firstrun;
+  buffer[129] =  kbd_data.persistent.ow_numlock;
+  buffer[130] =  kbd_data.persistent.ow_scrllock;
+  buffer[131] =  kbd_data.persistent.ow_capslock;
+  buffer[132] =  kbd_data.persistent.kbd_type;
+  buffer[133] =  kbd_data.persistent.kbd_xtclone;
+  buffer[134] =  kbd_data.persistent.kbd_ps2_codeset;
+  #endif // enable keyboard
+
   // Halt all interrupts to avoid errors
   ints = save_and_disable_interrupts();                                  
   
@@ -709,13 +812,16 @@ void loadPersistentSet() {
   uint8_t* flash_target_contents = (uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
   ushort i = 0;
+  ushort j = 0;
 
   for ( i ; i <= FLASH_SECTOR_SIZE_C/FLASH_PAGE_SIZE ; i++ ) {
-    if ( flash_target_contents[ (i*FLASH_PAGE_SIZE) ] == 255 ) { break; }
+    if ( flash_target_contents[ (i*FLASH_PAGE_SIZE) ] == 255 ) { break; };
   }
 
   if ( i != 0 ) { i--; i = i*256; }
 
+  // Keyboard Store
+  j = i + 128;
 
   mouse_data.persistent.firstrun = flash_target_contents[i];
   mouse_data.persistent.FW_V_MAJOR = flash_target_contents[++i];
@@ -750,6 +856,16 @@ void loadPersistentSet() {
   // Added version 1.2.X
   mouse_data.persistent.language = flash_target_contents[++i];
   
+  #if KB_ENABLE
+  kbd_data.persistent.firstrun = flash_target_contents[j];
+  kbd_data.persistent.ow_numlock = flash_target_contents[++j];
+  kbd_data.persistent.ow_scrllock = flash_target_contents[++j];
+  kbd_data.persistent.ow_capslock = flash_target_contents[++j];
+  kbd_data.persistent.kbd_type = flash_target_contents[++j];
+  kbd_data.persistent.kbd_xtclone = flash_target_contents[++j];
+  kbd_data.persistent.kbd_ps2_codeset = flash_target_contents[++j];
+  #endif // keyboard enable
+
   return;
 }
 

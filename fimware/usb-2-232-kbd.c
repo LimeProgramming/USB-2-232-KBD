@@ -72,7 +72,7 @@ int main(){
       // IF reset pin is still held
       if ( !gpio_get(RESET_FLASH) ) {   
           
-        loadPersistentSetDefaults();    // Load the default Settings
+        loadPersistentDefaults();       // Load the default Settings
         savePersistentSet();            // Save the default settings
 
         // Blink built-in LED forever waiting for user to reboot device

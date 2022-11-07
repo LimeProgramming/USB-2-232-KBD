@@ -66,7 +66,11 @@ void savePersistentSet();
 
 void loadPersistentSet();
 
-void loadPersistentSetDefaults();
+void loadPersistentMOUSEDefaults();
+
+void loadPersistentKBDDefaults();
+
+void loadPersistentDefaults();
 
 void updateStoredDipswitchs();
 
