@@ -153,11 +153,21 @@ static uint8_t default_use_cosine_smoothing = 0;
 static uint8_t default_language = 1;
 
 
-// Added version 2
-/*
-/==-- 0 -> No | 1 -> Yes 
-*/
-static uint8_t default_keyboard_supported = 1;
+// Added in Version 1 of KBD
+
+// Set your keyboard type (XT type currently not supported)
+static uint8_t default_keyboard_type = 1;       // 0 -> XT | 1 -> AT/PS2
+
+// Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway
+// Does not apply to AT/ps2 keyboards
+static uint8_t default_xtclone = 1 ;            // 0 -> IBM XT | 1 --> XT Clone
+
+// Which scan code set should we use while the adapter is an AT keyboard
+// This can be overwritten but not saved by the PS/2 command set functions.
+// XT keyboard mode will use set 1 regardless of this setting.
+//==-- 1 -> Set 1 | 2 -> set2 (default) | 3 -> set 3 (rarely used)
+static uint8_t default_ps2codeset = 2;
+
 
 /*---------------------------------------*/
 //            Advanced Settings          //

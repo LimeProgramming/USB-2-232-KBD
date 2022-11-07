@@ -556,7 +556,7 @@ int atoi(char* str) {
 
 void post_header(uart_inst_t * com) {
     
-    switch (default_keyboard_supported) {
+    switch (KB_ENABLE) {
     case 0: 
       term_writes_crlf(com, terminal_header[0]);     // Print the Header for the serial mouse
       break;

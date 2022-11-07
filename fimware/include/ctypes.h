@@ -244,9 +244,12 @@ typedef struct  {
 
   // Force the system to use 
   // 0 = auto | 1 = Force on | 2 = Force off
-  uint8_t startnumlock;
-  uint8_t startscrllock;
-  uint8_t startcapslock;
+  uint8_t ow_numlock;
+  uint8_t ow_scrllock;
+  uint8_t ow_capslock;
+
+  // 0 -> for XT | 1 -> AT
+  uint8_t kbd_type;
 
 } PERSISTENT_KBD_DATA;
 
@@ -279,28 +282,16 @@ typedef struct {
   // TODO: potentially removeable but might make coding easier
   bool tm_valid;
 
+  // Are we using PS2 set 1, 2 or 3
+  // 0x01 -> set 1 | 0x02 -> set 2 | 0x03 -> set 3
+  uint8_t scancode_set;
+
 } KBD_CMD_SET;
 
 
+
+
 typedef struct {
-
-
-
-
-
-  //uint8_t prev_keycodes[8];
-  //uint8_t prev_modifer;
-
-  bool PS2_receiving;
-  bool PS2_repeating;
-
-
-  //uint8_t kbd_ps2_conn_fail;
-
-    // Persistent keybaord data
-  //PERSISTENT_KBD_DATA persistent;
-
-
 
   // ------------- Real variables 
     // How many Keyboards are connected
@@ -324,6 +315,7 @@ typedef struct {
   // Time for when to poll the host computer
   absolute_time_t din_polling_target;
   
+  // command set data
   KBD_CMD_SET cmd_set;
 
 } KEYBOARD_DATA;
