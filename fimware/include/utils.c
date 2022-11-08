@@ -170,6 +170,7 @@ void stopPWRBlinkerTimer() {
   return;
 }
 
+
 // ==================================================================================================== //
 //                                         Mouse Settings Stuff                                         //
 // ==================================================================================================== //
@@ -377,27 +378,6 @@ void dipswGPIOCallback(uint gpio, uint32_t events) {
   }
 }
 
-
-// ==================================================================================================== //
-//                                            DIN port IRQ                                              //
-// ==================================================================================================== //
-
-void dinPresentingCallback(uint gpio, uint32_t events) {
-
-  #if DEBUG > 0 
-    printf("Din Presenting Callback called\n"); 
-  #endif
-
-  // Host pc does nothing for the first three seconds.
-  kbd_data.din_polling_target =  delayed_by_us( get_absolute_time(), 3000000);
-
-  gpio_acknowledge_irq(gpio, events);         // ACK GPIO IRQ
-  gpio_set_irq_enabled(gpio, events, 0);      // Disable the IRQ since we don't need it anymore
-  kbd_data.din_present=true;                  // Flag possible physial connection to computer
-  if ( !KB_TYPE && !KB_XTCLONE ){             // Pull down the data line to try to mimick ibm xt keyboards
-    gpio_put( PS2_DATA_OUT, 1);
-  }
-}
 
 // ==================================================================================================== //
 //                                         Persistent Settings                                          //
@@ -1362,16 +1342,32 @@ void reset_kbd_defaults() {
   kbd_data.din_conn_fail = 0;             // Reset connection failure counter
 
   // ===== Command set stuff =====
-  kbd_data.cmd_set.kbd_enabled = true;    // Enable the keyboard
-  kbd_data.cmd_set.key_mkbktm = 0x07;     // Set Default All Keys state
-  kbd_data.cmd_set.tm_delay = 500;        // Set Default Typematic delay of 0.5 seconds
-  kbd_data.cmd_set.tm_rate = 100;         // Set Default Typematic rate of 10.9cps
-  kbd_data.cmd_set.tm_key = 0x00;         // Blank the Typematic key  
+  load_cmd_set_settings();
 }
 
+// Load the current session settings for the keyboard
+void load_cmd_set_settings() {
 
+  kbd_data.cmd_set.kbd_enabled = true;                  // Enable keyboarc
+  kbd_data.cmd_set.key_mkbktm = 0x07;                   // Default all keys to Make/Break/Typematic
+  kbd_data.cmd_set.tm_key = 0x00;                       // Blank the typematic key
+  kbd_data.cmd_set.tm_timestamp = get_absolute_time();  // Set typematic timestamp to now
+  kbd_data.cmd_set.tm_valid = false;                    // Set Typematic key to invalid
+  kbd_data.cmd_set.tm_delay = 500;                      // Set Default Typematic delay of 0.5 seconds
+  kbd_data.cmd_set.tm_rate = 100;                       // Set Default Typematic rate of 10.9cps
 
+  // if the set keyboard type is XT
+  if ( kbd_data.persistent.kbd_type == 0 ) {
+    kbd_data.cmd_set.scancode_set = 0x00;
+  // else if persistent set ps2 code set is AUTO
+  } else if ( kbd_data.persistent.kbd_ps2_codeset == 0) {
+    kbd_data.cmd_set.scancode_set = 0x01;
+  } else {
+    kbd_data.cmd_set.scancode_set = kbd_data.persistent.kbd_ps2_codeset;
+  }
 
+  return;
+}
 
 
 /*---------------------------------------*/
@@ -1391,17 +1387,6 @@ static inline bool key_in_report(hid_keyboard_report_t const *report, uint8_t ke
 
 static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
 
-
-/*
-	0xE0  // LEFTCTRL
-	0xE1  // LEFTSHIFT
-	0xE2  // LEFTALT
-	0xE3  // LEFTGUI
-	0xE4  // RIGHTCTRL
-	0xE5  // RIGHTSHIFT
-	0xE6  // RIGHTALT
-	0xE7  // RIGHTGUI
-*/
 
 // Called by TinyUSB
 void process_kbd_report(hid_keyboard_report_t const *report)
@@ -1457,3 +1442,30 @@ void process_kbd_report(hid_keyboard_report_t const *report)
 }
 
 
+
+// ==================================================================================================== //
+//                                            DIN port IRQ                                              //
+// ==================================================================================================== //
+
+
+void dinPresentingCallback(uint gpio, uint32_t events) {
+
+  #if DEBUG > 0 
+    printf("Din Presenting Callback called\n"); 
+  #endif
+
+  // Host pc does nothing for the first three seconds.
+  //kbd_data.din_polling_target =  delayed_by_us( get_absolute_time(), 3000000);
+
+  gpio_acknowledge_irq(gpio, events);         // ACK GPIO IRQ
+  gpio_set_irq_enabled(gpio, events, 0);      // Disable the IRQ since we don't need it anymore
+  kbd_data.din_present=true;                  // Flag possible physial connection to computer
+
+  load_cmd_set_settings();                   // Load the live keyboard settings, mostly the command set settings.
+
+  if ( kbd_data.persistent.kbd_type == 0 && kbd_data.persistent.kbd_xtclone == 0 ){             // Pull down the data line to try to mimick ibm xt keyboards
+    gpio_put( PS2_DATA_OUT, 1);
+  }
+
+  return;
+}

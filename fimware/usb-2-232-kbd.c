@@ -142,15 +142,18 @@ int main(){
       // This can be duped by connecteding KB PWR header on the KBD PCB, This is mostly for XT machines. 
       // This will be true when the device is powered via the din port
       if ( gpio_get(PS2_DATA_IN) && gpio_get(PS2_CLOCK_IN) ) { 
+        
+        kbd_data.din_present = true;            // Flag computer as connected
+        kbd_data.din_initalised = false;        // Din keyboard is no longer active
+        kbd_data.din_conn_fail = 0;             // Reset connection failure counter
+
+        load_cmd_set_settings();                // Load the CMD set settings
 
         // If we're trying to be an XT keyboard and an IBM XT, Pull data low as soon as possible.
         // IBM XT start with data line low
-        if ( !KB_TYPE && !KB_XTCLONE ){
+        if ( kbd_data.persistent.kbd_type == 0 && kbd_data.persistent.kbd_xtclone == 0 ){            
           gpio_put( PS2_DATA_OUT, 1);
         }
-
-        kbd_data.din_present=true;
-        kbd_data.din_polling_target =  delayed_by_us( get_absolute_time(), 3000000);
 
       // Else set up an IRQ to flag Din as pressent when pc is powered on. 
       } else {

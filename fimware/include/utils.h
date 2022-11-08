@@ -111,6 +111,8 @@ void reset_kbd_defaults();
 
 void set_not_present_locks(uint8_t addr, uint8_t inst);
 
+void load_cmd_set_settings();
+
 
 /*---------------------------------------*/
 //             Keyboard Timers           //

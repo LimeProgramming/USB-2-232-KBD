@@ -555,21 +555,12 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
             switch (val) {
             case 0x00:  
                 // Host is looking for the scan code set we are set to
-                // TODO: this but better
-
-                at_write(0x02);
+                at_write( (kbd_data.cmd_set.scancode_set + 0x01) );
                 break;
             
-            case 0x01:
-                // Set scan code set to set 1
-                break;
-
-            case 0x02:
-                // Set scan code set to set 2
-                break;
-
-            case 0x03:
-                // Set scan code set to set 3
+            // 0x01 = scan code set 1 | 0x02 = scan code set 2 | 0x03 = scan code set 3
+            case 0x01: case 0x02: case 0x03:
+                kbd_data.cmd_set.scancode_set = (val - 0x01);
                 break;
             }
                
@@ -657,8 +648,8 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
 
             // ===== Write the keycode to PS2 =====
             // Send keycode if it is not zero
-            if ( USB2PS2SMake[usbhidcode - 0xE0][KB_TYPE][i] != 0x00 ) {
-                at_write( USB2PS2SMake[usbhidcode - 0xE0][KB_TYPE][i] );
+            if ( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
+                at_write( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
             }
 
             // Next itter
@@ -668,7 +659,7 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
         // ========== Pause/Break ==========
         if ( usbhidcode == 0x48 ) {
             // xt keyboard
-            if ( KB_TYPE == 0 ) {
+            if ( kbd_data.cmd_set.scancode_set == 0 ) {
                 xt_pause_press();
             } else {
                 at_pause_press();
@@ -680,8 +671,8 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
 
         // ========== Regular Keycodes ==========
         // Zend keycode if the keycode is not zero
-        if ( USB2PS2Make[usbhidcode][KB_TYPE][i] != 0x00 ) {
-            at_write( USB2PS2Make[usbhidcode][KB_TYPE][i] );
+        if ( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
+            at_write( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
         }
     }
 
@@ -697,20 +688,17 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
         return 0; //TMP
     }
 
-    // Loop through out look up array || kEYBOARD TYPE used as an XT/AT switch
-    for(uint8_t i = 0 ; i < (KB_TYPE + 2) ; i++) {   
+    // Loop through out look up array
+    for(uint8_t i = 0 ; i < 3 ; i++) {
 
         // ========== Modifers ==========
         // Send modifer key from different translation table
         if ( usbhidcode >= 0xE0 ) {
 
-            printf("special break");
             // ===== Blanks =====
             // Zend keycode if the keycode is not zero
-            if ( USB2PS2SBreak[usbhidcode - 0xE0][KB_TYPE][i] != 0x00 ) {
-                printf("%#8X\n", (USB2PS2SBreak[usbhidcode - 0xE0][KB_TYPE][i]));   // gives 0x000007
-
-                at_write( USB2PS2SBreak[usbhidcode - 0xE0][KB_TYPE][i] );
+            if ( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
+                at_write( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
             }
 
             // Next Itter 
@@ -719,9 +707,9 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
         
         // ========== Regular Keycodes ==========
         // If the keycode is not zero
-        if ( USB2PS2Break[usbhidcode][KB_TYPE][i] != 0x00 ) {
+        if ( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
             // Send the keycode
-            at_write( USB2PS2Break[usbhidcode][KB_TYPE][i] );
+            at_write( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
         }
     }
 
