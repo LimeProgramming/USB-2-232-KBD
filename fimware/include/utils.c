@@ -1336,6 +1336,39 @@ void set_locks_from_din(uint8_t data) {
   }
 }
 
+// Set the state of the locks on a connected keyboard.
+void set_usb_locks(uint8_t dev_addr, uint8_t instance, uint8_t data) { 
+
+    printf("dev addr: %d | Instance: %d", dev_addr, instance);
+
+    switch ( data ) {
+
+      case AT_KB_LED_S: // Scroll lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1); 
+          break;
+      case AT_KB_LED_N: // Number lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);
+          break;
+      case AT_KB_LED_NS: // Number and scroll lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NS, 1); 
+          break;
+      case AT_KB_LED_C: // Caps lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_C, 1);
+          break;
+      case AT_KB_LED_CS: // Caps and Scroll lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);
+          break;
+      case AT_KB_LED_NC: // Num and Caps lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);
+          break;
+      case AT_KB_LED_NCS: // Number, Caps and Scroll Lock
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);
+          break;
+      case AT_KB_LED_NONE: default: // No Locks
+          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);
+    }
+}
+
 void reset_kbd_defaults() {
   
   // ===== Din Values =====
@@ -1357,6 +1390,7 @@ void load_cmd_set_settings() {
   kbd_data.cmd_set.tm_valid = false;                    // Set Typematic key to invalid
   kbd_data.cmd_set.tm_delay = 500;                      // Set Default Typematic delay of 0.5 seconds
   kbd_data.cmd_set.tm_rate = 100;                       // Set Default Typematic rate of 10.9cps
+  kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED;
 
   // if the set keyboard type is XT
   if ( kbd_data.persistent.kbd_type == 0 ) {
@@ -1440,8 +1474,6 @@ void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_
 
     return;
   }
-
-  printf("keycode 0x%x | kbd_nyumber: %d", kbd_data.kbd_tusb_prev_report[kbd_number].keycode[0], kbd_number);
 
   // ========== Modifers ==========
   // Modifers are all sent in one uint so we need to do bitwise operations to figure out which modifer keys are pressed and which are not.

@@ -136,11 +136,13 @@ int main(){
 
       // Data Out
       init_led(PS2_DATA_OUT);
-      
+
       // Blank out the TinyUSB keyboard reports
       for (uint8_t i = 0 ; i < KB_MAX_KEYBOARDS ; i++ ) {
         kbd_data.kbd_tusb_prev_report[i] = (hid_keyboard_report_t) { 0, 0, {0} };
       };
+
+      kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED;
     
       // Check Keyboard clock and data lines looking for a possible connection
       // This can be duped by connecteding KB PWR header on the KBD PCB, This is mostly for XT machines. 
@@ -283,12 +285,26 @@ int main(){
         // If keyboard is not enabled, skip over keyboard handle functions
         #if KB_ENABLE
 
+        if ( kbd_data.cmd_set.led_state != AT_KB_LED_UNCHANGED ) {
+
+          for( uint8_t i = 0 ; i < kbd_data.kbd_count ; i ++ ) {
+            
+            set_usb_locks(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], kbd_data.cmd_set.led_state);
+            tuh_task(); 
+          };
+          kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED; 
+        };
+
+        if ( kbd_data.cmd_set.tm_key != 0x00 && time_reached(kbd_data.cmd_set.tm_timestamp) ) {
+          keyboard_make(kbd_data.cmd_set.tm_key);
+          kbd_data.cmd_set.tm_timestamp = delayed_by_ms(get_absolute_time(), kbd_data.cmd_set.tm_rate);
+        };
 
         // ----- Is something flagged as connected to the DIN port
         // If we think there isn't a computer connected to our din port, then continue the main loop
         if ( !kbd_data.din_present ) {
           continue;
-          } // !kbd_data.din_present
+          } 
 
 
         // ----- Are we initialised to the host pc as a keyboard?

@@ -63,14 +63,15 @@ enum CORE_FLAGS {
 
 // LED values from the AT keyboard controller
 enum AT_KB_LED {
-  AT_KB_LED_NONE  = 0,
-  AT_KB_LED_S     = 1,
-  AT_KB_LED_N     = 2,
-  AT_KB_LED_NS    = 3,
-  AT_KB_LED_C     = 4,
-  AT_KB_LED_CS    = 5,
-  AT_KB_LED_NC    = 6,
-  AT_KB_LED_NCS   = 7
+  AT_KB_LED_UNCHANGED = -1,
+  AT_KB_LED_NONE      = 0,
+  AT_KB_LED_S         = 1,
+  AT_KB_LED_N         = 2,
+  AT_KB_LED_NS        = 3,
+  AT_KB_LED_C         = 4,
+  AT_KB_LED_CS        = 5,
+  AT_KB_LED_NC        = 6,
+  AT_KB_LED_NCS       = 7
 };
 
 
@@ -297,6 +298,9 @@ typedef struct {
   // 0x00 -> set 1 | 0x01 -> set 2 | 0x02 -> set 3
   uint8_t scancode_set;
 
+  // LEDS
+  int8_t led_state;
+
 } KBD_CMD_SET;
 
 
@@ -304,7 +308,6 @@ typedef struct {
 
 typedef struct {
 
-  // ------------- Real variables 
     // How many Keyboards are connected
   uint8_t kbd_count;
 
