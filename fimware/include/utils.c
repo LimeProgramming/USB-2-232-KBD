@@ -1305,6 +1305,8 @@ void set_locks_from_din(uint8_t data) {
 
   for( uint8_t i = 0 ; i < kbd_data.kbd_count ; i ++ ) {
 
+    busy_wait_ms(10);
+
     switch ( data ) {
 
       case AT_KB_LED_S: // Scroll lock
@@ -1384,21 +1386,69 @@ static inline bool key_in_report(hid_keyboard_report_t const *report, uint8_t ke
   return false;
 }
 
-
-static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
-
-
 // Called by TinyUSB
-void process_kbd_report(hid_keyboard_report_t const *report)
-{
+void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_t const *report) {
 
-  //printf("modifier: %d\n ", report->modifier);
+  // ========== KRO Error ==========
+  // When a USB keyboard has a rollover error from terrible matrix or the likes then it sends a report of all keys pressed with USBCode of 0x01
+  // IF this happens we can disgard the report
+  if (report->keycode[0] == 0x01 && report->keycode[1] == 0x01 && report->keycode[2] == 0x01 && report->keycode[3] == 0x01 && report->keycode[4] == 0x01 && report->keycode[5] == 0x01 ) {
 
-  // ----- Modifiers
+    #if DEBUG > 0
+    printf("USB Keyboard rollover error, ignoreing latest report\n");
+    fflush(stdout);
+    #endif 
+
+    return;
+  };
+
+  // ========== Typematic ==========
+  // Controllers are not typematic so we can do this here
+  // Whenever a new key is pressed or released, typematic is broken
+  kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
+  
+  // ========== Find Previous Report ==========
+  // This will give us a var called kbd_number that we'll use for a loopup key 
+
+  bool kbd_connected = false;
+  uint8_t kbd_number = 0;
+
+  for ( kbd_number = 0 ; kbd_number < KB_MAX_KEYBOARDS ; kbd_number++) {
+    if ( (kbd_data.kbd_tusb_addr[kbd_number][0] == dev_addr) && (kbd_data.kbd_tusb_addr[kbd_number][1] == instance) ) {
+      kbd_connected = true;
+      break;
+    };
+  };
+
+  // Check if we actually found a keyboard and check if the found keyboard is weirdly higher then the known number of connected keyboards
+  if ( !kbd_connected || (kbd_number + 1) > kbd_data.kbd_count ) {
+  
+  /*
+    if ((kbd_number + 1) > kbd_connected) {
+      printf("thisone\n");
+      printf("Keyboard number: %d", kbd_number);
+      printf(" | KBD_connected: %d\n", )
+
+    }
+    */
+
+
+    #if DEBUG > 0
+    printf("USB Keyboard report error, cannot find a valid previous report.\n");
+    fflush(stdout);
+    #endif 
+
+    return;
+  }
+
+  printf("keycode 0x%x | kbd_nyumber: %d", kbd_data.kbd_tusb_prev_report[kbd_number].keycode[0], kbd_number);
+
+  // ========== Modifers ==========
+  // Modifers are all sent in one uint so we need to do bitwise operations to figure out which modifer keys are pressed and which are not.
 
   for(uint8_t i = 0 ; i < 8 ; i++) {
 
-    if ( ( (report->modifier >> i) & 1 ) != ( (prev_report.modifier >> i) & 1 ) ) {
+    if ( ( (report->modifier >> i) & 1 ) != ( (kbd_data.kbd_tusb_prev_report[kbd_number].modifier >> i) & 1 ) ) {
 
       if ( (report->modifier >> i) & 1 ) {
             keyboard_make ( (224 + i) );
@@ -1406,30 +1456,32 @@ void process_kbd_report(hid_keyboard_report_t const *report)
             keyboard_break( (224 + i) );
           }
     }
-
   }
-
+  
+  printf("modifier: %d\n ", report->modifier); fflush(stdout);
 
   //------------- example code ignore control (non-printable) key affects -------------//
   for(uint8_t i=0; i<6; i++) {
-    
-
+  
     if ( report->keycode[i] ){  
 
       // If key not in previous report, then the current key is newly pressed
       // else key exists in previous report, then the key is being held
-      if ( !key_in_report(&prev_report, report->keycode[i]) ) {
-        keyboard_make( (report->keycode[i]) );
+      if ( !key_in_report(&kbd_data.kbd_tusb_prev_report[kbd_number], report->keycode[i]) ) {
+        
 
-        //printf("key pressed %d\n", report->keycode[i]);
+        kbd_data.cmd_set.tm_key = (report->keycode[i]);       // USB hid key 0x00 is all zeros in lookup tables
+        kbd_data.cmd_set.tm_timestamp = delayed_by_ms( get_absolute_time(), kbd_data.cmd_set.tm_delay);
+
+        keyboard_make( (report->keycode[i]) );
       }
     }
 
-    if ( prev_report.keycode[i] ) {
+    if ( kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i] ) {
 
       // If key exists in previous report and not in he current report then the key has been released
-      if ( !key_in_report(report, prev_report.keycode[i]) ){
-        keyboard_break( (prev_report.keycode[i]) );
+      if ( !key_in_report(report, kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) ){
+        keyboard_break( (kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) );
 
         //printf("key depressed %d\n", prev_report.keycode[i]);
 
@@ -1438,7 +1490,8 @@ void process_kbd_report(hid_keyboard_report_t const *report)
   }
 
   printf("Key1: %d | Key2: %d | Key3: %d |  Key4: %d | Key5: %d | Key6: %d\n", report->keycode[0], report->keycode[1], report->keycode[2], report->keycode[3], report->keycode[4], report->keycode[5]);
-  prev_report = *report;
+  //prev_report = *report;
+  kbd_data.kbd_tusb_prev_report[kbd_number] = (hid_keyboard_report_t) *report;
 }
 
 

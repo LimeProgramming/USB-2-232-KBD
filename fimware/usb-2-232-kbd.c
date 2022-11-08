@@ -136,8 +136,12 @@ int main(){
 
       // Data Out
       init_led(PS2_DATA_OUT);
-
-
+      
+      // Blank out the TinyUSB keyboard reports
+      for (uint8_t i = 0 ; i < KB_MAX_KEYBOARDS ; i++ ) {
+        kbd_data.kbd_tusb_prev_report[i] = (hid_keyboard_report_t) { 0, 0, {0} };
+      };
+    
       // Check Keyboard clock and data lines looking for a possible connection
       // This can be duped by connecteding KB PWR header on the KBD PCB, This is mostly for XT machines. 
       // This will be true when the device is powered via the din port

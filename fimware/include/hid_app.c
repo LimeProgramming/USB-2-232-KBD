@@ -71,6 +71,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             // By default host stack will use activate boot protocol on supported interface.
             hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info, MAX_HID_REPORT, desc_report, desc_len);
             printf("HID has %u reports \r\n", hid_info[instance].report_count);
+            fflush(stdout);
 
         break;
         
@@ -91,6 +92,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
     const uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     printf("HID device with address %d, instance %d, protocol %d, is a %s, has mounted.\r\n", dev_addr, instance, itf_protocol, protocol_str[itf_protocol]); 
+    fflush(stdout);
 
     // ---------- Print out for bad USB device.
     //if ( !claim_endpoint ) { printf("Error: cannot request to receive report\r\n"); }
@@ -119,23 +121,41 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
         break;
 
         case HID_ITF_PROTOCOL_KEYBOARD: 
-
+            
+            // ========== Is our keyboard ==========
             // Check is keybaord is one we care about
             if ( !is_kb_connected(dev_addr, instance) ) { break; }
 
-            uint8_t newkbd_tusb_addr[4][2]; 
-            uint8_t j = 0;
+            // ========== Typematic ==========
+            // Break typematic when a usb keyboard is disconnected because the typematic key could be from the disconnected keyboard/
+            kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
+            
+            // ========== Rebuid stored data arrays ==========
+            // We need to rebuild the arrays of stored data to account for the missing keyboard. 
+            uint8_t newkbd_tusb_addr[4][2]; uint8_t j = 0;
+            hid_keyboard_report_t newkbd_tusb_prev_report[4];
 
             for ( uint8_t i = 0 ; i < kbd_data.kbd_count ; i++ ) {
                 
+                // Make sure all our new array init with all zeros
+                newkbd_tusb_prev_report[i] = (hid_keyboard_report_t) { 0, 0, {0} };
+                newkbd_tusb_addr[i][0] = 0;
+                newkbd_tusb_addr[i][1] = 0;
+
+                // Start rebuilding out arrays, removing which keyboard has been removed
                 if ( kbd_data.kbd_tusb_addr[i][0] != dev_addr || newkbd_tusb_addr[i][1] != instance ) {
-                    newkbd_tusb_addr[j][0] = kbd_data.kbd_tusb_addr[i][0];
-                    newkbd_tusb_addr[j][1] = kbd_data.kbd_tusb_addr[i][1];
+                    newkbd_tusb_addr[j][0] = kbd_data.kbd_tusb_addr[i][0];          // keyboard address
+                    newkbd_tusb_addr[j][1] = kbd_data.kbd_tusb_addr[i][1];          // keyboard instance
+                    newkbd_tusb_prev_report[j] = kbd_data.kbd_tusb_prev_report[i];  // keyboard reports
                     j++;
                 } 
             }
             
             memcpy(kbd_data.kbd_tusb_addr, newkbd_tusb_addr, 4);
+            memcpy(kbd_data.kbd_tusb_prev_report, newkbd_tusb_prev_report, 4);
+
+            // ========== Keyboard Counts ==========
+            // Update out keyboard counter for the sake of the ALRT LEDS
             kbd_data.kbd_count = j;
 
             // Turn off Keyboard led if no USB keyboard is flagged as connected
@@ -148,6 +168,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 
     #if DEBUG
     printf("HID device with address %d, instance %d was unmounted.\r\n", dev_addr, instance);
+    fflush(stdout);
     #endif
 }
 
@@ -155,7 +176,6 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 // ---------- This is executed when data is received from the mouse
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
 {  
-    printf("sesdsdsdsd");
     switch (tuh_hid_interface_protocol(dev_addr, instance)) 
     {   
          // Process Mouse Report
@@ -171,7 +191,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             // Check is keybaord is valid
             if ( !is_kb_connected(dev_addr, instance) ) { break; }
 
-            process_kbd_report((hid_keyboard_report_t const*) report );
+            process_kbd_report( dev_addr, instance, (hid_keyboard_report_t const*) report );
             break;
 
         // Process Generic Report

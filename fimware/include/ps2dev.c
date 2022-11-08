@@ -236,10 +236,10 @@ int8_t at_write(unsigned char keycode)
                 setDATA ( 1 );
                 break;
             default:    // Our Data bits
-                setDATA( (keycode & 0x01) );   // Set our data line
+                setDATA( (keycode >> (bitcount-1)) & 0x01 );   // Set our data line
 
-                parity ^= (keycode & 0x01);    // Parity Tracker
-                keycode >>= 1;                 // "move" onto the next keycode bit
+                parity ^= (keycode >> (bitcount-1)) & 0x01;    // Parity Tracker
+                //keycode >>= 1;                 // "move" onto the next keycode bit
                 break;
         }
 
@@ -257,7 +257,8 @@ int8_t at_write(unsigned char keycode)
 
 
     #if DEBUG > 0
-        printf("sent %x\n", keycode);
+        printf("Sent Din Data 0x%x\n", keycode);
+        fflush(stdout);
     #endif
 
     return 0;
@@ -308,9 +309,12 @@ int8_t at_read(unsigned char * value) {
     *value = data & 0x00FF;
 
     #if DEBUG > 0
-        printf("received data %x", *value);
-        printf(" received parity %c", rec_parity);
-        printf(" calculated parity %c\n",rec_parity);
+        printf("Read Din Data: Received data 0x%x | Received parity %s | Calculated parity %s\n", 
+            *value,
+            (rec_parity ? "1" : "0"),
+            (cal_parity ? "1" : "0")
+        );
+        fflush(stdout);
     #endif
 
     // If the partity doesn't match, return parity fail error
@@ -632,55 +636,116 @@ int8_t keyboard_handle(unsigned char *leds) {
 
 // Keyboard button is pressed, takes usbhid keycode and coverts it ps2 keycode for writing to ps2 out
 uint8_t keyboard_make( unsigned char usbhidcode ) {
+    
+    // ========== Din initialised ==========
+    // Don't talk over the DIN port if we don't know we have a connecton to a host PC
+    // It might initerupt the inita;ization process
+    if ( !kbd_data.din_present || !kbd_data.din_initalised ) {
+        return(0);
+    }
+
+    // ========== Command Set ==========
+    // IF the AT type keyboard has been disabled by the PS/2 command set 
+    // We're putting this check here to keep at_write unaffected for sending ACKS
+    if ( kbd_data.persistent.kbd_type == 1 && !kbd_data.cmd_set.kbd_enabled ) {
+        return(0);
+    };
 
     // ========== Unknown Code ==========
     // Incase the usbhid code sent is unknown, just ignore it
     if ( ( usbhidcode > 0xA4 && usbhidcode < 0xE0 ) || ( usbhidcode > 0xE7 ) ) {
         return 0; //TMP
-    }
+    };
 
     // Loop through out look up array
     for(uint8_t i = 0 ; i < 2 ; i++) {   
         
         // ========== Modifers ==========
-        // Send modifer key from different translation table
+        // Modifer key scan codes are stored in a different lookup table.
         if ( usbhidcode >= 0xE0 ) { 
 
-            // ===== Write the keycode to PS2 =====
-            // Send keycode if it is not zero
-            if ( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
-                at_write( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
+            // Keyboard type
+            // XT keyboards are set 1 only and do not have a method to switch scan codes. 
+            // So we hard code the set to set 1 when in xt keyboard mode
+            switch (kbd_data.persistent.kbd_type) {
+
+            case 0x00:  // XT
+                if ( USB2PS2SMake[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifer is not zero
+                    xt_write( USB2PS2SMake[usbhidcode - 0xE0][0x00][i] ); 
+                };
+                break;
+
+            case 0x01: // AT
+                if ( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] ) {
+                    at_write( USB2PS2SMake[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
+                }
+                break;
             }
 
-            // Next itter
-            continue;
+            continue;   // Next itter
         }
         
         // ========== Pause/Break ==========
+        // Pause/Break key is quite a bit different between Set 1, Set 2 and Set 3.
+        // So here is some special handling just for the Pause/Break key
         if ( usbhidcode == 0x48 ) {
-            // xt keyboard
-            if ( kbd_data.cmd_set.scancode_set == 0 ) {
-                xt_pause_press();
-            } else {
-                at_pause_press();
+
+            switch ( kbd_data.cmd_set.scancode_set ) {
+                case 0x01: // XT Keyboard
+                    return(xt_pause_press()); // The function sends all the scan codes so we can exit the loop
+                    break;
+                case 0x02: // AT Keyboard
+                    return(at_pause_press());
+                    break;
+                case 0x03: // PS/2 Set 3
+                    if ( USB2PS2Make[0x48][2][i] != 0x00 ) { at_write( USB2PS2Make[0x48][2][i] ); };
+                    break;
             }
 
-            // Next itter
-            continue;
+            continue;   // Next itter
         }
 
         // ========== Regular Keycodes ==========
-        // Zend keycode if the keycode is not zero
-        if ( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
-            at_write( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
-        }
-    }
+
+        // Keyboard type
+        // XT keyboards are set 1 only and do not have a method to switch scan codes. 
+        // So we hard code the set to set 1 when in xt keyboard mode
+        switch (kbd_data.persistent.kbd_type) {
+
+        case 0x00:  // XT
+            if ( USB2PS2Make[usbhidcode][0x00][i] ) { // If lookup scancode modifer is not zero
+                xt_write( USB2PS2Make[usbhidcode][0x00][i] ); 
+            };
+            break;
+
+        case 0x01: // AT
+            if ( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] ) {
+                at_write( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
+            }
+            break;
+        } // End switch
+        
+    } // End for loop
 
     return 0;
 }
 
 // Keyboard butons is depressed, takes usbhid keycode and convers it to ps2 keycode for writing to ps2 out
 uint8_t keyboard_break( unsigned char usbhidcode ) {
+
+    // ========== Din initialised ==========
+    // Don't talk over the DIN port if we don't know we have a connecton to a host PC
+    // It might initerupt the inita;ization process
+    if ( !kbd_data.din_present || !kbd_data.din_initalised ) {
+        return(0);
+    }
+
+    // ========== Command Set ==========
+    // IF the AT type keyboard has been disabled by the PS/2 command set 
+    // We're putting this check here to keep at_write unaffected for sending ACKS
+    if ( kbd_data.persistent.kbd_type == 1 && !kbd_data.cmd_set.kbd_enabled ) {
+        return 0;
+    };
 
     // ========== Unknown Code ==========
     // Incase the usbhid code sent is unknown, just ignore it
@@ -692,26 +757,68 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
     for(uint8_t i = 0 ; i < 3 ; i++) {
 
         // ========== Modifers ==========
-        // Send modifer key from different translation table
+        // Modifer key scan codes are stored in a different lookup table.
         if ( usbhidcode >= 0xE0 ) {
+      
+            // Keyboard type
+            // XT keyboards are set 1 only and do not have a method to switch scan codes. 
+            // So we hard code the set to set 1 when in xt keyboard mode
+            switch (kbd_data.persistent.kbd_type) {
 
-            // ===== Blanks =====
-            // Zend keycode if the keycode is not zero
-            if ( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
-                at_write( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
+            case 0x00:  // XT
+                if ( USB2PS2SBreak[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifer is not zero
+                    xt_write( USB2PS2SBreak[usbhidcode - 0xE0][0x00][i] ); 
+                };
+                break;
+
+            case 0x01: // AT
+                if ( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] ) {
+                    at_write( USB2PS2SBreak[usbhidcode - 0xE0][kbd_data.cmd_set.scancode_set][i] );
+                }
+                break;
             }
-
-            // Next Itter 
-            continue;
+            
+            continue; // Next Itter 
         }
         
-        // ========== Regular Keycodes ==========
-        // If the keycode is not zero
-        if ( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] != 0x00 ) {
-            // Send the keycode
-            at_write( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
+        // ========== Pause/Break ==========
+        // Pause/Break key is quite a bit different between Set 1, Set 2 and Set 3.
+        // So here is some special handling just for the Pause/Break key
+        if ( usbhidcode == 0x48 ) {
+            
+            switch ( kbd_data.cmd_set.scancode_set ) {
+                case 0x00: case 0x01: // Keyboard set 1 and 2 lack a pause/break release scan code set
+                    return(0);
+                    break;
+                case 0x02: // PS/2 Set 3
+                    if ( USB2PS2Break[0x48][2][i] != 0x00 ) { at_write( USB2PS2Break[0x48][2][i] ); };
+                    break;
+            }
+
+            continue;   // Next itter
         }
-    }
+
+        // ========== Regular Keycodes ==========
+   
+        // Keyboard type
+        // XT keyboards are set 1 only and do not have a method to switch scan codes. 
+        // So we hard code the set to set 1 when in xt keyboard mode
+        switch (kbd_data.persistent.kbd_type) {
+
+        case 0x00:  // XT
+            if ( USB2PS2Break[usbhidcode][0x00][i] ) { // If lookup scancode modifer is not zero
+                xt_write( USB2PS2Break[usbhidcode][0x00][i] ); 
+            };
+            break;
+
+        case 0x01: // AT
+            if ( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] ) {
+                at_write( USB2PS2Break[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
+            }
+            break;
+        } // End Switch
+
+    } // End for loop
 
     return 0;
 }

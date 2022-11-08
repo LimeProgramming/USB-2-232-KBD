@@ -128,6 +128,5 @@ int64_t idle_usb_leds(alarm_id_t id, void *user_data);
 
 void set_locks_from_din(uint8_t data);
 
-void process_kbd_report(hid_keyboard_report_t const * report);
-
+void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_t const *report);
 #endif
