@@ -1221,8 +1221,8 @@ int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
   uint32_t newtime = 400;             // How long before we all the alarm again, in ms
 
   // ===== Santiy Checks
-  if ( kbd_data.kbd_count < 1 ) { return 0; };  // Make sure at least one keyboard is connected
-  if ( kbd_data.din_present )   { return 0; };  // Stop if there is a host computer connected
+  if ( kbd_data.kbd_count < 1 ) { kbd_data.idle_lock_timer_id = 0, return 0; };  // Make sure at least one keyboard is connected
+  if ( kbd_data.din_present )   { kbd_data.idle_lock_timer_id = 0, return 0; };  // Stop if there is a host computer connected
 
   // ===== Set our new LED state
   switch ( led ) {
@@ -1246,10 +1246,12 @@ int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
   }
 
   // ===== rescheule the alarm
-  add_alarm_in_ms(newtime, idle_kbd_locks, (void*) (uintptr_t) (led + 1), true);
+  kbd_data.idle_lock_timer_id = alarm_pool_add_alarm_at(alarm_pool_get_default(), delayed_by_ms(get_absolute_time(), newtime), idle_kbd_locks, (void*) (uintptr_t) (led + 1), true);
 
   return 0;
 }
+
+
 
 /*---------------------------------------*/
 //             Useful functions          //
@@ -1324,10 +1326,9 @@ void load_cmd_set_settings() {
   kbd_data.cmd_set.key_mkbktm = 0x07;                   // Default all keys to Make/Break/Typematic
   kbd_data.cmd_set.tm_key = 0x00;                       // Blank the typematic key
   kbd_data.cmd_set.tm_timestamp = get_absolute_time();  // Set typematic timestamp to now
-  kbd_data.cmd_set.tm_valid = false;                    // Set Typematic key to invalid
   kbd_data.cmd_set.tm_delay = 500;                      // Set Default Typematic delay of 0.5 seconds
   kbd_data.cmd_set.tm_rate = 100;                       // Set Default Typematic rate of 10.9cps
-  kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED;
+  kbd_data.cmd_set.led_state = AT_KB_LED_NONE;          // Set LED state to none
 
   // if the set keyboard type is XT
   if ( kbd_data.persistent.kbd_type == 0 ) {
@@ -1483,7 +1484,8 @@ void dinPresentingCallback(uint gpio, uint32_t events) {
   gpio_set_irq_enabled(gpio, events, 0);      // Disable the IRQ since we don't need it anymore
   kbd_data.din_present=true;                  // Flag possible physial connection to computer
 
-  load_cmd_set_settings();                   // Load the live keyboard settings, mostly the command set settings.
+
+  load_cmd_set_settings();                    // Load the live keyboard settings, mostly the command set settings.
 
   if ( kbd_data.persistent.kbd_type == 0 && kbd_data.persistent.kbd_xtclone == 0 ){             // Pull down the data line to try to mimick ibm xt keyboards
     gpio_put( PS2_DATA_OUT, 1);

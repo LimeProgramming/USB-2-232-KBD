@@ -109,6 +109,8 @@ void update_mousepacket();
 
 int64_t idle_kbd_locks(alarm_id_t id, void *user_data);
 
+bool is_idle_kbd_locks(alarm_pool_t *pool);
+
 
 /*---------------------------------------*/
 //           Useful KBD functions        //
@@ -116,7 +118,7 @@ int64_t idle_kbd_locks(alarm_id_t id, void *user_data);
 
 bool is_kb_connected(uint8_t kbd_addr, uint8_t kbd_inst);
 
-void set_kbd_locks(uint8_t data)
+void set_kbd_locks(uint8_t data);
 
 void update_kbd_locks();
 

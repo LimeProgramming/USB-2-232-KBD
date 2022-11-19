@@ -290,10 +290,6 @@ typedef struct {
   // Store the numbner of milliseconds after the key is pressed before it becomes typematic
   uint16_t tm_delay;
 
-  // Is the current typematic key valid for typematic use
-  // TODO: potentially removeable but might make coding easier
-  bool tm_valid;
-
   // Are we using PS2 set 1, 2 or 3
   // 0x00 -> set 1 | 0x01 -> set 2 | 0x02 -> set 3
   uint8_t scancode_set;
@@ -320,11 +316,14 @@ typedef struct {
   // Set to true if we think the din port is connected to a computer.
   bool din_present;
 
-  // Set to ture if we know that we have initialised with the host computer
+  // Set to true if we know that we have initialised with the host computer
   bool din_initalised;
 
   // Connection failure tracker
   uint8_t din_conn_fail;
+
+  // Alarm ID for the idle lock timer
+  alarm_id_t idle_lock_timer_id;
 
   // Time for when to poll the host computer
   absolute_time_t din_polling_target;
