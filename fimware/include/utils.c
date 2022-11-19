@@ -116,6 +116,7 @@ bool terminal_timer_callback(struct repeating_timer *t) {
   // ----- Check UART1
   if( term_getc(uart1, uart_data, 2) > 0) {  
     printf("%d | %d\n", uart_data[0], uart_data[1]);
+    fflush(stdout);
 
       if( uart_data[0] == '\r' || uart_data[0] == '\n' ) {
           mouse_data.serial_state = 2;                    // Set our Flag
@@ -1206,68 +1207,49 @@ void update_mousepacket()
 //             Keyboard Timers           //
 /*---------------------------------------*/
 
+// ========== Idle locks alarm
+// This alarm began life far more complicated but later simplfied. 
+// All this does is set the lock leds for the first most connected usb keyboard not only to look super rad cool but 
+// to let the user know that the keyboard is connected but idle
+int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
 
-int64_t idle_usb_leds(alarm_id_t id, void *user_data) {
-
-  //===== Cancel the alarm to keep free space in the pool
+  // ===== Cancel the alarm to keep free space in the pool
   alarm_pool_cancel_alarm(alarm_pool_get_default(), id); 
 
-  //===== Process our user data
-  int val = (int)user_data;           // Cast our void pointer to an int
-  uint8_t led =  (val & 0xF00) >> 8;  // Extract the current LED state
-  uint8_t addr = (val & 0xF0) >> 4;   // Extract dev_address
-  uint8_t inst = (val & 0xF);         // Extract dev_instance
-
-  bool setnew = false;                // Do we set a new alarm to continue itterating?
+  // ===== Process our user data
+  int led = (int)user_data;           // Cast our void pointer to an int to get the current led state
   uint32_t newtime = 400;             // How long before we all the alarm again, in ms
 
+  // ===== Santiy Checks
+  if ( kbd_data.kbd_count < 1 ) { return 0; };  // Make sure at least one keyboard is connected
+  if ( kbd_data.din_present )   { return 0; };  // Stop if there is a host computer connected
 
-  //===== Santiy Checks
-  if ( !is_kb_connected(addr, inst) ) { return 0; };    // Stop if the keyboard is no longer connected
-  if ( kbd_data.din_present ) { return 0; };            // Stop if there is a host computer connected
-
-  //===== Set our new LED state
+  // ===== Set our new LED state
   switch ( led ) {
-    case 0: case 12:
+    case 12:
       led = 0;
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);   newtime = 2000; break;
-    case 1:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);      break;
-    case 2:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);     break;
-    case 3:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);    newtime = 800; break;
-    case 4:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);     break;
-    case 5:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1);      break;
-    case 6:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);   newtime = 2000; break;
-    case 7:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1);      break;
-    case 8:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);     break;
-    case 9:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);    newtime = 800; break;
-    case 10:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);     break;
-    case 11:
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);      break;
+    case 0: case 6:
+      kbd_data.cmd_set.led_state = AT_KB_LED_NONE;  newtime = 2000; break;
+    case 1: case 11:
+      kbd_data.cmd_set.led_state = AT_KB_LED_N;     break;
+    case 2: case 10:
+      kbd_data.cmd_set.led_state = AT_KB_LED_NC;    break;
+    case 3: case 9:
+      kbd_data.cmd_set.led_state = AT_KB_LED_NCS;   newtime = 800;  break;
+    case 4: case 8:
+      kbd_data.cmd_set.led_state = AT_KB_LED_CS;    break;
+    case 5: case 7:
+      kbd_data.cmd_set.led_state = AT_KB_LED_S;     break;
     case 13:
-      led = 0;
-      setnew = tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);    newtime = 2000; break;
+      kbd_data.cmd_set.led_state = AT_KB_LED_NCS;   
+      led = 0;  newtime = 2000;   break;
   }
 
-  //===== If LED change was successful, rescheule the alarm
-  if ( setnew ) {
-    val = ( ( ((led + 1) << 4) + addr ) << 4 ) + inst;
-
-    add_alarm_in_ms(newtime, idle_usb_leds, (void*) (uintptr_t) val, true);
-  }
+  // ===== rescheule the alarm
+  add_alarm_in_ms(newtime, idle_kbd_locks, (void*) (uintptr_t) (led + 1), true);
 
   return 0;
 }
-
 
 /*---------------------------------------*/
 //             Useful functions          //
@@ -1284,89 +1266,44 @@ bool is_kb_connected(uint8_t kbd_addr, uint8_t kbd_inst) {
     return false;
 }
 
-// ========== Locks
-void set_not_present_locks(uint8_t addr, uint8_t inst) {
+// Set the LED lock state of the first most connected keyboard
+void set_kbd_locks(uint8_t data) { 
 
-  // Is the keyboard is still connected?
-  //if ( !is_kb_connected(addr, inst)) { return; };
+  // If there are no keyboards connected, return
+  if ( kbd_data.kbd_count < 1 ) { return; };
 
-  // If we can't set all leds to on, don't start the alarm
-  //if ( !tuh_hid_set_report(addr, inst, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1) ) { return; };
+  switch ( data ) {
+    case AT_KB_LED_S: // Scroll lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1); 
+        break;
+    case AT_KB_LED_N: // Number lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);
+        break;
+    case AT_KB_LED_NS: // Number and scroll lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NS, 1); 
+        break;
+    case AT_KB_LED_C: // Caps lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_C, 1);
+        break;
+    case AT_KB_LED_CS: // Caps and Scroll lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);
+        break;
+    case AT_KB_LED_NC: // Num and Caps lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);
+        break;
+    case AT_KB_LED_NCS: // Number, Caps and Scroll Lock
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);
+        break;
+    case AT_KB_LED_NONE: default: // No Locks
+        tuh_hid_set_report(kbd_data.kbd_tusb_addr[0][0], kbd_data.kbd_tusb_addr[0][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);
+        break;
+  };
+}
 
-  //int val = ( (dev_addr << 4) + instance )
-  // Create an alarm for IDLE leds
-  add_alarm_in_ms(800, idle_usb_leds, (void*)( ( (0xD0 + addr ) << 4 ) + inst ), true);         
-
+// Wrapper for the set_kbd_locks function to update the locks from the stored led_state value
+void update_kbd_locks() { 
+  set_kbd_locks(kbd_data.cmd_set.led_state);
   return;
-}
-
-// Set the state of the locks on a connected keyboard.
-void set_locks_from_din(uint8_t data) { 
-
-  for( uint8_t i = 0 ; i < kbd_data.kbd_count ; i ++ ) {
-
-    busy_wait_ms(10);
-
-    switch ( data ) {
-
-      case AT_KB_LED_S: // Scroll lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1); 
-          break;
-      case AT_KB_LED_N: // Number lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);
-          break;
-      case AT_KB_LED_NS: // Number and scroll lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NS, 1); 
-          break;
-      case AT_KB_LED_C: // Caps lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_C, 1);
-          break;
-      case AT_KB_LED_CS: // Caps and Scroll lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);
-          break;
-      case AT_KB_LED_NC: // Num and Caps lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);
-          break;
-      case AT_KB_LED_NCS: // Number, Caps and Scroll Lock
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);
-          break;
-      case AT_KB_LED_NONE: default: // No Locks
-          tuh_hid_set_report(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);
-    }
-  }
-}
-
-// Set the state of the locks on a connected keyboard.
-void set_usb_locks(uint8_t dev_addr, uint8_t instance, uint8_t data) { 
-
-    printf("dev addr: %d | Instance: %d", dev_addr, instance);
-
-    switch ( data ) {
-
-      case AT_KB_LED_S: // Scroll lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_S, 1); 
-          break;
-      case AT_KB_LED_N: // Number lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_N, 1);
-          break;
-      case AT_KB_LED_NS: // Number and scroll lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NS, 1); 
-          break;
-      case AT_KB_LED_C: // Caps lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_C, 1);
-          break;
-      case AT_KB_LED_CS: // Caps and Scroll lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_CS, 1);
-          break;
-      case AT_KB_LED_NC: // Num and Caps lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NC, 1);
-          break;
-      case AT_KB_LED_NCS: // Number, Caps and Scroll Lock
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NCS, 1);
-          break;
-      case AT_KB_LED_NONE: default: // No Locks
-          tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)&TUSB_KB_LED_NONE, 1);
-    }
 }
 
 void reset_kbd_defaults() {

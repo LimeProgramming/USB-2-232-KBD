@@ -592,7 +592,6 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
     case SET_RESET_LEDS: //set/reset LEDs
         //== The host follows this command with one argument byte, that specifies
         //== the state of the keyboard's Num Lock, Caps Lock, and Scroll Lock LEDs
-        
         printf("leds\n");
         ps2ack();
         if(!at_read(leds)) ps2ack(); //do nothing with the rate

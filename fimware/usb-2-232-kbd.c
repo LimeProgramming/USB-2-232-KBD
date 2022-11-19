@@ -285,16 +285,22 @@ int main(){
         // If keyboard is not enabled, skip over keyboard handle functions
         #if KB_ENABLE
 
-        if ( kbd_data.cmd_set.led_state != AT_KB_LED_UNCHANGED ) {
 
-          for( uint8_t i = 0 ; i < kbd_data.kbd_count ; i ++ ) {
-            
-            set_usb_locks(kbd_data.kbd_tusb_addr[i][0], kbd_data.kbd_tusb_addr[i][1], kbd_data.cmd_set.led_state);
-            tuh_task(); 
-          };
-          kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED; 
+        // ----- Keyboard Leds -----
+        // I've attempted this several differnt ways, some smarter and some dumber. However I kept having problems with TinyUSB being terrible
+        // This seems to be a more stable way of setting the led state at least for just the one keyboard. 
+        // Changing the LED state of multiple keyboards require strange timing and some luck
+        if ( kbd_data.cmd_set.led_state != AT_KB_LED_UNCHANGED ) {
+          
+          update_kbd_locks();                               // Update the LEDs on the fist most connected keyboard
+          tuh_task();                                       // TinyUSB host task, calling this immidately seems to help reduce errors 
+          kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED; // Re-set LED state value
         };
 
+
+        // ----- Typematic -----
+        // Once we hit the tm_timestamp threshold we will repeatedly send the typematic key
+        // at a rate set by either PS2 command set commands or default values. 
         if ( kbd_data.cmd_set.tm_key != 0x00 && time_reached(kbd_data.cmd_set.tm_timestamp) ) {
           keyboard_make(kbd_data.cmd_set.tm_key);
           kbd_data.cmd_set.tm_timestamp = delayed_by_ms(get_absolute_time(), kbd_data.cmd_set.tm_rate);

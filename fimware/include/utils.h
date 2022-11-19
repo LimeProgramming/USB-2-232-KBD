@@ -80,6 +80,7 @@ void updateStoredDipswitchs();
 
 void blink_led_task(void);
 
+
 /*---------------------------------------*/
 //             Travel Limits             //
 /*---------------------------------------*/
@@ -87,6 +88,7 @@ void blink_led_task(void);
 int16_t travel_limit(int16_t val, uint8_t percentage, uint16_t constainval);
 
 int16_t travel_limit_d(int16_t val, double percentage, uint16_t constainval);
+
 
 /*---------------------------------------*/
 //            Mouse Processing           //
@@ -102,33 +104,31 @@ void update_mousepacket();
 
 
 /*---------------------------------------*/
+//             Keyboard Timers           //
+/*---------------------------------------*/
+
+int64_t idle_kbd_locks(alarm_id_t id, void *user_data);
+
+
+/*---------------------------------------*/
 //           Useful KBD functions        //
 /*---------------------------------------*/
 
 bool is_kb_connected(uint8_t kbd_addr, uint8_t kbd_inst);
 
+void set_kbd_locks(uint8_t data)
+
+void update_kbd_locks();
+
 void reset_kbd_defaults();
 
-void set_not_present_locks(uint8_t addr, uint8_t inst);
-
 void load_cmd_set_settings();
-
-
-/*---------------------------------------*/
-//             Keyboard Timers           //
-/*---------------------------------------*/
-
-//int64_t start_idle_leds(alarm_id_t id, void *user_data);
-int64_t idle_usb_leds(alarm_id_t id, void *user_data);
 
 
 /*---------------------------------------*/
 //             KBD Processing            //
 /*---------------------------------------*/
 
-void set_locks_from_din(uint8_t data);
-
-void set_usb_locks(uint8_t dev_addr, uint8_t instance, uint8_t data);
-
 void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_t const *report);
+
 #endif
