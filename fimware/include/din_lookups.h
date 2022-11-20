@@ -10,7 +10,7 @@
 
 // Look up table to convert USB keyboard keycodes to XT or AT keycodes.
 // These values are for pressing the keys
-// [KeyCode from TinyUSB][Set1/Set2/Set3][PS2KEYCODES]
+// [KeyCode from TinyUSB][Set 1/Set 2/Set 3][PS2KEYCODES]
 const uint8_t USB2PS2Make[][3][2] = {
     { {0x00,0x00}, {0x00,0x00}, {0x00,0x00} },  //HID_KEY_NONE
     { {0x00,0x00}, {0x00,0x00}, {0x00,0x00} },  //BLANK

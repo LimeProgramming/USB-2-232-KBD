@@ -36,7 +36,7 @@ enum PC_INIT_STATES {
 
 // Mouse Movement Type
 enum MO_MVT_TYPE {
-  MO_MVT_ADDITIVE  = 0, // Cumulate and constrain the X and Y values.
+  MO_MVT_ADDITIVE  = 0, // Cumulative and constrain the X and Y values.
   MO_MVT_AVERAGE = 1, // Average X and Y values.
   MO_MVT_COAST  = 2  // Coast X and Y values.
 };
@@ -76,7 +76,7 @@ enum AT_KB_LED {
 
 
 enum DIN_CONN_RETS {
-  DIN_RET_DISCONN= 7, // Disconnedted
+  DIN_RET_DISCONN= 7, // Disconnected
   DIN_RET_UNAVAIL= 6, // Unavailable
   DIN_RET_PRFAIL = 5, // ?
   DIN_RET_TOUT   = 4, // Time out
@@ -132,7 +132,7 @@ typedef struct  {
     // global limit | Range 1 -> 200
     uint8_t xytravel_percentage;
 
-    // seperate x and y limits. | Range 1 -> 200
+    // separate x and y limits. | Range 1 -> 200
     uint8_t xtravel_percentage;
     uint8_t ytravel_percentage;
 
@@ -203,13 +203,13 @@ typedef struct {
   // Raw Mouse data.                    
   MOUSE_RPKT rmpkt;    
 
-  // Persisten Mouse data, survives reboots.
+  // Persistent Mouse data, survives reboots.
   PERSISTENT_MOUSE_DATA persistent;               
 
   // Is mouse connected flag
   uint8_t mouse_count;
   
-  // counr the number of mouse updates between serial cycles. USed for AVG mouse movement
+  // count the number of mouse updates between serial cycles. USed for AVG mouse movement
   uint8_t mouse_movt_ticker;
 
   // The real Baudrate returned by pico
@@ -254,6 +254,7 @@ typedef struct  {
   uint8_t kbd_type;
 
   // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway
+  // 0 -> IBM XT | 1 -> Clone
   // Does not apply to AT/ps2 keyboards
   bool kbd_xtclone;
 
@@ -273,7 +274,7 @@ typedef struct {
   // Set command values of F5h for disable and load defaults and F4 for enable
   bool kbd_enabled;
 
-  // Key make, break or typematic. Tells the keyboard if the keys sould send make, break codes or be typematic.
+  // Key make, break or typematic. Tells the keyboard if the keys should send make, break codes or be typematic.
   // Set command values of FAh, F9h, F8h, F7h 
   // Bitwise ops. 0000-0mkbktm | 1 == enabled 0 == disabled
   uint8_t key_mkbktm;
@@ -287,7 +288,7 @@ typedef struct {
   // Stores the number of milliseconds between presses of the typematic key
   uint16_t tm_rate;
 
-  // Store the numbner of milliseconds after the key is pressed before it becomes typematic
+  // Store the number of milliseconds after the key is pressed before it becomes typematic
   uint16_t tm_delay;
 
   // Are we using PS2 set 1, 2 or 3
@@ -316,7 +317,7 @@ typedef struct {
   // Set to true if we think the din port is connected to a computer.
   bool din_present;
 
-  // Set to true if we know that we have initialised with the host computer
+  // Set to true if we know that we have initialized with the host computer
   bool din_initalised;
 
   // Connection failure tracker

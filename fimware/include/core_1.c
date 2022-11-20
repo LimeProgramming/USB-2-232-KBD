@@ -24,7 +24,7 @@ uint8_t read_fifo() {
 
 void write_fifo(uint8_t core_flag) {
 
-  // Wait to be able to writeable
+  // Wait to be able to writable
   while ( !multicore_fifo_wready() ) { tight_loop_contents(); }
 
   // Write Flag to fifo
@@ -95,13 +95,13 @@ void core1_serial_mouse() {
       // ==================================================
       serial_mouse_target = delayed_by_us( get_absolute_time(), mouse_data.persistent.mousetype == TWOBTN ? mouse_data.serialdelay_3B : mouse_data.serialdelay_4B );
 
-      // IF there is no USB mouse connected OR adpter is not to act as a serial mouse
+      // IF there is no USB mouse connected OR adapter is not to act as a serial mouse
       // ==================================================
       if ( (mouse_data.mouse_count == 0 && DEBUG == 0) || (mouse_data.serial_state != 0) ) { continue; };
 
       /* ----- Talk to Core 0 ----- */
       // ==================================================
-      // Core 0 generates the next mouse packet because there was a noticable lag if Core1 generated it
+      // Core 0 generates the next mouse packet because there was a noticeable lag if Core1 generated it
 
       // Tell core0 to generate updated mouse packet
       write_fifo(cf_update); 

@@ -165,7 +165,7 @@ void startPWRBlinkerTimer() {
   return;
 }
 
-// Stop Our PWR LED blicker timer
+// Stop Our PWR LED blinker timer
 void stopPWRBlinkerTimer() {                                
   cancel_repeating_timer(&PWR_blinker_timer);    
   return;
@@ -200,7 +200,7 @@ void calcSerialDelay(){
   return;
 }
 
-// Set Serial Baid rate from the headers
+// Set Serial Baud rate from the headers
 void setDipSerialBaud() {
   if ( !gpio_get(DIPSW_19200) )  { mouse_data.persistent.baudrate = 19200; }
   else                           { mouse_data.persistent.baudrate = 1200; }
@@ -236,12 +236,12 @@ void setDipMouseSpeed()
 
 
 /*
-I spent a bit of time trying to figure out the simplest way to have mouse settings updatable without restarting the pi pico.
+I spent a bit of time trying to figure out the simplest way to have mouse settings update-able without restarting the pi pico.
 I could have just called the above functions in the main loop all the time but that felt wasteful.
-Debounce in a gpio_callback doesn't work well, give it a Google, some fellow tried it and it was spotty.
-I implemented a hardware debounce but decided against it, since it made the final PCB bigger for something not integral. 
+De-bounce in a gpio_callback doesn't work well, give it a Google, some fellow tried it and it was spotty.
+I implemented a hardware de-bounce but decided against it, since it made the final PCB bigger for something not integral. 
 
-Ultimately I decided it was best to add an alarm from a GPIO callback to act as a poor mans debounce.
+Ultimately I decided it was best to add an alarm from a GPIO callback to act as a poor mans de-bounce.
 */
 
 volatile bool DIPSW_MOUSE_IRQ = false;
@@ -287,7 +287,7 @@ int64_t mouse_speed_callback(alarm_id_t id, void *user_data) {
   savePersistentSet();                  // Save persistent settings       
   DIPSW_XYSPEED_IRQ = false;            // Flag that we are done with this func
   mouse_data.serial_state = 0;          // Start the serial mouse timer 
-  start_core1(0);                        // Start Core 1
+  start_core1(0);                       // Start Core 1
 
   return 0;                                   
 }
@@ -310,7 +310,7 @@ int64_t serial_format_callback(alarm_id_t id, void *user_data) {
   savePersistentSet();                  // save persistent
   DIPSW_7N2_IRQ = false;                // Flag that the func is done
   mouse_data.serial_state = 0;          // Start the serial mouse timer 
-  start_core1(0);                        // Start Core 1
+  start_core1(0);                       // Start Core 1
   
   return 0;                                   
 }
@@ -328,17 +328,17 @@ int64_t serial_speed_callback(alarm_id_t id, void *user_data) {
   stop_core1();                         // Stop Core 1
   setDipSerialBaud();                   // Set new Baud rate based on dip switches
   refresh_serial_uart();                // Reinit serial with updated settings
-  calcSerialDelay();                    // Recalulate serial delay used by the main mouse timer
+  calcSerialDelay();                    // Recalculate serial delay used by the main mouse timer
   updateStoredDipswitchs();             // Poll all dip switches for state
   savePersistentSet();                  // Store all settings
   mouse_data.serial_state = 0;          // Start the serial mouse timer 
   DIPSW_19200_IRQ = false;              // Flag that this func is finished
-  start_core1(0);                        // Start Core 1
+  start_core1(0);                       // Start Core 1
 
   return 0;                                   
 }
 
-// Baically this is acting as a poor mans debounce on the dip switches
+// Basically this is acting as a poor mans de-bounce on the dip switches
 void dipswGPIOCallback(uint gpio, uint32_t events) {
   gpio_acknowledge_irq(gpio, events);         // ACK GPIO IRQ
 
@@ -391,7 +391,7 @@ void dipswGPIOCallback(uint gpio, uint32_t events) {
 // Loads the default settings from default_config.h
 void loadPersistentDefaults() {
   #if KB_ENALBE
-  loadPersistentKBDDefaults();    // Load the kkeyboard default settings from default_config.h
+  loadPersistentKBDDefaults();    // Load the keyboard default settings from default_config.h
   #endif
 
   loadPersistentMOUSEDefaults();  // Load the default settings from default_config.h
@@ -409,7 +409,7 @@ void loadPersistentMOUSEDefaults() {
   mouse_data.persistent.FW_V_MINOR = V_MINOR;
   mouse_data.persistent.FW_V_REVISION = V_REVISION;
 
-  // Simple Contrains
+  // Simple Constrains
   mouse_data.persistent.xytravel_percentage =  constrainui(default_xytravel_percentage, 1, 200); //int8_t min, int8_t max) 
   mouse_data.persistent.xtravel_percentage =   constrainui(default_xtravel_percentage,  1, 200);
   mouse_data.persistent.ytravel_percentage =   constrainui(default_ytravel_percentage,  1, 200);
@@ -508,7 +508,7 @@ void loadPersistentKBDDefaults() {
   // This can be overwritten but not saved by the PS/2 command set functions.
   // XT keyboard mode will use set 1 regardless of this setting.
   // Auto will pick the scan code set based on keyboard type above and the ps2 command set
-  //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set2 | 3 -> set 3 (rarely used)
+  //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set 2 | 3 -> set 3 (rarely used)
   if ( (default_ps2codeset == 0) || (default_ps2codeset == 1) || (default_ps2codeset == 2) || (default_ps2codeset == 3) ) { kbd_data.persistent.kbd_ps2_codeset = default_ps2codeset; }
   else                                                                                                                    { kbd_data.persistent.kbd_ps2_codeset = 0; }
 }
@@ -535,7 +535,7 @@ void initPersistentSet() {
     #endif
     
     loadPersistentMOUSEDefaults();  // Load the default settings from default_config.h
-    loadPersistentKBDDefaults();    // Load the kkeyboard default settings from default_config.h
+    loadPersistentKBDDefaults();    // Load the keyboard default settings from default_config.h
     savePersistentSet();            // Save new persistent Data
     machine_reboot();               // Reboot Pico
   } 
@@ -560,7 +560,7 @@ void initPersistentSet() {
   
   /* ----- If The Firmware Version Has Changed ----- */
   // ==================================================
-  // Just store the new verion information
+  // Just store the new version information
   if ( (V_MAJOR > mouse_data.persistent.FW_V_MAJOR || V_MINOR > mouse_data.persistent.FW_V_MINOR ) && saveset == false ){
     mouse_data.persistent.FW_V_MAJOR = V_MAJOR;
     mouse_data.persistent.FW_V_MINOR = V_MINOR;
@@ -570,9 +570,9 @@ void initPersistentSet() {
 
   /* ----- DIPSWITCHES----- */
   // ==================================================
-  // Use Dipswitch data if dipswitch is closed and it doesn't match the stored data
+  // Use Dip-switch data if dip-switch is closed and it doesn't match the stored data
 
-  // If stored dipswitch state does not match current dipswitch state.
+  // If stored dip-switch state does not match current dip-switch state.
   if ( ( mouse_data.persistent.ST_DIPSW_THREEBTN != gpio_get(DIPSW_THREEBTN) ) || ( mouse_data.persistent.ST_DIPSW_WHEEL != gpio_get(DIPSW_WHEEL) ) ) {
     setDipMouseType();
     mouse_data.persistent.ST_DIPSW_THREEBTN = gpio_get(DIPSW_THREEBTN);
@@ -580,7 +580,7 @@ void initPersistentSet() {
     saveset = true;
     }
 
-  // Mouse xytracking speed Dip Switches
+  // Mouse xy tracking speed Dip Switches
   if ( ( mouse_data.persistent.ST_DIPSW_75XYSPEED != gpio_get(DIPSW_75XYSPEED) ) || ( mouse_data.persistent.ST_DIPSW_50XYSPEED != gpio_get(DIPSW_50XYSPEED) ) ) {
     setDipMouseSpeed();
     mouse_data.persistent.ST_DIPSW_75XYSPEED = gpio_get(DIPSW_75XYSPEED);
@@ -640,7 +640,7 @@ void initPersistentSet() {
 
     fflush(stdout);
 
-    printf("mousetype: %d | doublestopbit: %d | baudrate: %d\n",
+    printf("mousetype: %d | doublestopbit: %d | baud-rate: %d\n",
       mouse_data.persistent.mousetype,
       mouse_data.persistent.doublestopbit,
       mouse_data.persistent.baudrate
@@ -694,7 +694,7 @@ void initPersistentSet() {
 
 
 /*
-* Some kind of wear leveling for the pico's flash memeory
+* Some kind of wear leveling for the pico's flash memory
 * The only time this reports 0 is for the first time run
 * If this reports 16, then flash needs to be erased
 */
@@ -702,7 +702,7 @@ ushort findEmptyPage() {
   uint8_t* flash_target_contents = (uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
   for ( ushort i = 0 ; i <= FLASH_SECTOR_SIZE_C/FLASH_PAGE_SIZE ; i++ ) {
-    // If the curent page being looked at is blank, this is the first run var
+    // If the current page being looked at is blank, this is the first run var
     if ( flash_target_contents[ (i*FLASH_PAGE_SIZE) ] == 255 ) {
       return i;
     }
@@ -715,7 +715,7 @@ void savePersistentSet() {
   uint32_t ints;
   uint8_t buffer[FLASH_PAGE_SIZE];
 
-  // Write persistend data to buffer array
+  // Write persistent data to buffer array
   buffer[0] = mouse_data.persistent.firstrun;
   buffer[1] = mouse_data.persistent.FW_V_MAJOR;
   buffer[2] = mouse_data.persistent.FW_V_MINOR;
@@ -779,7 +779,7 @@ void savePersistentSet() {
   // Program Target Area
   flash_range_program(FLASH_TARGET_OFFSET + (pagenum * FLASH_PAGE_SIZE), buffer, FLASH_PAGE_SIZE );
 
-  // Restore previouslt halted interrupts
+  // Restore previously halted interrupts
   restore_interrupts(ints);
 
   #if DEBUG > 0
@@ -866,7 +866,7 @@ void updateStoredDipswitchs() {
 // ==================================================================================================== //
 
 
-// I use this as a visual que that the pico is actually running the main loop.
+// I use this as a visual Que that the pico is actually running the main loop.
 void blink_led_task(void)
 {
 	const uint32_t interval_ms = 1000;
@@ -889,7 +889,7 @@ void blink_led_task(void)
 
 int16_t travel_limit(int16_t val, uint8_t percentage, uint16_t constainval)
 {
-  // Do that first to avoid unnesseccary processing 
+  // Do that first to avoid unnecessary processing 
   if ( val == 0 || percentage == 0 ) {
     return 0;
 
@@ -921,7 +921,7 @@ int16_t travel_limit(int16_t val, uint8_t percentage, uint16_t constainval)
 
 int16_t travel_limit_d(int16_t val, double percentage, uint16_t constainval)
 {
-  // Do that first to avoid unnesseccary processing 
+  // Do that first to avoid unnecessary processing 
   if ( val == 0 || percentage == 0 ) {
     return 0;
 
@@ -1208,7 +1208,7 @@ void update_mousepacket()
 /*---------------------------------------*/
 
 // ========== Idle locks alarm
-// This alarm began life far more complicated but later simplfied. 
+// This alarm began life far more complicated but later simplified. 
 // All this does is set the lock leds for the first most connected usb keyboard not only to look super rad cool but 
 // to let the user know that the keyboard is connected but idle
 int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
@@ -1220,9 +1220,9 @@ int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
   int led = (int)user_data;           // Cast our void pointer to an int to get the current led state
   uint32_t newtime = 400;             // How long before we all the alarm again, in ms
 
-  // ===== Santiy Checks
-  if ( kbd_data.kbd_count < 1 ) { kbd_data.idle_lock_timer_id = 0, return 0; };  // Make sure at least one keyboard is connected
-  if ( kbd_data.din_present )   { kbd_data.idle_lock_timer_id = 0, return 0; };  // Stop if there is a host computer connected
+  // ===== Sanity Checks
+  if ( kbd_data.kbd_count < 1 ) { kbd_data.idle_lock_timer_id = 0; return 0; };  // Make sure at least one keyboard is connected
+  if ( kbd_data.din_present )   { kbd_data.idle_lock_timer_id = 0; return 0; };  // Stop if there is a host computer connected
 
   // ===== Set our new LED state
   switch ( led ) {
@@ -1245,19 +1245,18 @@ int64_t idle_kbd_locks(alarm_id_t id, void *user_data) {
       led = 0;  newtime = 2000;   break;
   }
 
-  // ===== rescheule the alarm
+  // ===== reschedule the alarm
   kbd_data.idle_lock_timer_id = alarm_pool_add_alarm_at(alarm_pool_get_default(), delayed_by_ms(get_absolute_time(), newtime), idle_kbd_locks, (void*) (uintptr_t) (led + 1), true);
 
   return 0;
 }
 
 
-
 /*---------------------------------------*/
 //             Useful functions          //
 /*---------------------------------------*/
 
-// Called by tusb report rec,  checks if the keyboard we recieved data from is a known and accepted keyboard.
+// Called by tusb report rec,  checks if the keyboard we received data from is a known and accepted keyboard.
 bool is_kb_connected(uint8_t kbd_addr, uint8_t kbd_inst) {
 
     for(uint8_t i = 0; i < kbd_data.kbd_count; i++) {
@@ -1322,7 +1321,7 @@ void reset_kbd_defaults() {
 // Load the current session settings for the keyboard
 void load_cmd_set_settings() {
 
-  kbd_data.cmd_set.kbd_enabled = true;                  // Enable keyboarc
+  kbd_data.cmd_set.kbd_enabled = true;                  // Enable keyboard
   kbd_data.cmd_set.key_mkbktm = 0x07;                   // Default all keys to Make/Break/Typematic
   kbd_data.cmd_set.tm_key = 0x00;                       // Blank the typematic key
   kbd_data.cmd_set.tm_timestamp = get_absolute_time();  // Set typematic timestamp to now
@@ -1367,101 +1366,97 @@ void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_
   if (report->keycode[0] == 0x01 && report->keycode[1] == 0x01 && report->keycode[2] == 0x01 && report->keycode[3] == 0x01 && report->keycode[4] == 0x01 && report->keycode[5] == 0x01 ) {
 
     #if DEBUG > 0
-    printf("USB Keyboard rollover error, ignoreing latest report\n");
+    printf("USB Keyboard rollover error, ignoring latest report\n");
     fflush(stdout);
     #endif 
 
     return;
   };
+
 
   // ========== Typematic ==========
   // Controllers are not typematic so we can do this here
   // Whenever a new key is pressed or released, typematic is broken
   kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
   
+
   // ========== Find Previous Report ==========
   // This will give us a var called kbd_number that we'll use for a loopup key 
-
-  bool kbd_connected = false;
   uint8_t kbd_number = 0;
 
   for ( kbd_number = 0 ; kbd_number < KB_MAX_KEYBOARDS ; kbd_number++) {
+
+    // If we have a match with known connected keyboards
     if ( (kbd_data.kbd_tusb_addr[kbd_number][0] == dev_addr) && (kbd_data.kbd_tusb_addr[kbd_number][1] == instance) ) {
-      kbd_connected = true;
       break;
-    };
+
+    //  If the report comes from an erroneous source
+    } else if ( (kbd_number + 1) == KB_MAX_KEYBOARDS ) {
+
+      #if DEBUG > 0
+      printf("USB Keyboard report error, cannot find a valid previous report.\n");
+      fflush(stdout);
+      #endif 
+
+      return;
+    }
+
   };
 
-  // Check if we actually found a keyboard and check if the found keyboard is weirdly higher then the known number of connected keyboards
-  if ( !kbd_connected || (kbd_number + 1) > kbd_data.kbd_count ) {
-  
-  /*
-    if ((kbd_number + 1) > kbd_connected) {
-      printf("thisone\n");
-      printf("Keyboard number: %d", kbd_number);
-      printf(" | KBD_connected: %d\n", )
 
-    }
-    */
-
-
-    #if DEBUG > 0
-    printf("USB Keyboard report error, cannot find a valid previous report.\n");
-    fflush(stdout);
-    #endif 
-
-    return;
-  }
-
-  // ========== Modifers ==========
-  // Modifers are all sent in one uint so we need to do bitwise operations to figure out which modifer keys are pressed and which are not.
-
+  // ========== Modifiers ==========
+  // Modifiers are all sent in as one uint so we need to do bitwise operations to figure out which modifier keys are pressed and which are not.
   for(uint8_t i = 0 ; i < 8 ; i++) {
 
+    // If modifier key in new report does not match the modifier key in the previous report
     if ( ( (report->modifier >> i) & 1 ) != ( (kbd_data.kbd_tusb_prev_report[kbd_number].modifier >> i) & 1 ) ) {
-
-      if ( (report->modifier >> i) & 1 ) {
-            keyboard_make ( (224 + i) );
-          } else {
-            keyboard_break( (224 + i) );
-          }
+      if  ( (report->modifier >> i) & 1 ) { keyboard_make ( (224 + i) ); }  // If a modifier key has been pressed
+      else                                { keyboard_break( (224 + i) ); }  // else a modifier key has been released
     }
   }
   
-  printf("modifier: %d\n ", report->modifier); fflush(stdout);
-
-  //------------- example code ignore control (non-printable) key affects -------------//
+  // ========== The rest of the keys ==========
+  // Non modifiers are sent in an array of key-presses
   for(uint8_t i=0; i<6; i++) {
-  
+    
+    // ===== Checking for a keyboard make
+    // If the spot in the array has a keycode for us
     if ( report->keycode[i] ){  
 
       // If key not in previous report, then the current key is newly pressed
       // else key exists in previous report, then the key is being held
       if ( !key_in_report(&kbd_data.kbd_tusb_prev_report[kbd_number], report->keycode[i]) ) {
         
-
-        kbd_data.cmd_set.tm_key = (report->keycode[i]);       // USB hid key 0x00 is all zeros in lookup tables
-        kbd_data.cmd_set.tm_timestamp = delayed_by_ms( get_absolute_time(), kbd_data.cmd_set.tm_delay);
+        // ===== Typematic Key =====
+        // Only keyboards are Typematic so we can do this here, If checks if the typematic is enabled by the AT/PS2 command set or else the typematic key will be left blank
+        if ( kbd_data.cmd_set.key_mkbktm & 0x01 ) { 
+          kbd_data.cmd_set.tm_key = (report->keycode[i]);                                                   // Set Typematic key
+          kbd_data.cmd_set.tm_timestamp = delayed_by_ms( get_absolute_time(), kbd_data.cmd_set.tm_delay);   // Set Typematic delay based on value set by AT/PS2 command set
+        };
 
         keyboard_make( (report->keycode[i]) );
       }
-    }
 
-    if ( kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i] ) {
+    // ===== Checking for a keyboard break
+    // Else the spot in the array does not have a keycode for us, which could mean that we need to send a break
+    } else if ( kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i] ) {
 
       // If key exists in previous report and not in he current report then the key has been released
       if ( !key_in_report(report, kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) ){
         keyboard_break( (kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) );
-
-        //printf("key depressed %d\n", prev_report.keycode[i]);
-
       }
     }
   }
 
-  printf("Key1: %d | Key2: %d | Key3: %d |  Key4: %d | Key5: %d | Key6: %d\n", report->keycode[0], report->keycode[1], report->keycode[2], report->keycode[3], report->keycode[4], report->keycode[5]);
-  //prev_report = *report;
+  // Overwrite the previous report with the newest report
   kbd_data.kbd_tusb_prev_report[kbd_number] = (hid_keyboard_report_t) *report;
+
+  // Debug printout
+  #if DEBUG > 0
+  printf("Key1: %d | Key2: %d | Key3: %d |  Key4: %d | Key5: %d | Key6: %d\n", report->keycode[0], report->keycode[1], report->keycode[2], report->keycode[3], report->keycode[4], report->keycode[5]);
+  fflush(stdout);
+  #endif
+
 }
 
 
@@ -1475,6 +1470,7 @@ void dinPresentingCallback(uint gpio, uint32_t events) {
 
   #if DEBUG > 0 
     printf("Din Presenting Callback called\n"); 
+    fflush(stdout);
   #endif
 
   // Host pc does nothing for the first three seconds.
@@ -1482,7 +1478,7 @@ void dinPresentingCallback(uint gpio, uint32_t events) {
 
   gpio_acknowledge_irq(gpio, events);         // ACK GPIO IRQ
   gpio_set_irq_enabled(gpio, events, 0);      // Disable the IRQ since we don't need it anymore
-  kbd_data.din_present=true;                  // Flag possible physial connection to computer
+  kbd_data.din_present=true;                  // Flag possible physical connection to computer
 
 
   load_cmd_set_settings();                    // Load the live keyboard settings, mostly the command set settings.

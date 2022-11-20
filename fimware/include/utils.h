@@ -5,7 +5,7 @@
 #define UTILS_H_
 
 /*---------------------------------------*/
-//                Utilites               //
+//               Utilities               //
 /*---------------------------------------*/
 
 int constraini(int16_t value, int16_t min, int16_t max);

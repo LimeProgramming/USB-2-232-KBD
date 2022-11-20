@@ -30,7 +30,7 @@ https://www.tayloredge.com/reference/Interface/atkeyboard.pdf
 #define CLKHALF 20
 // Delay between bytes
 // I've found i need at least 400us to get this working at all,
-// but even more is needed for reliability, so i've put 1000us
+// but even more is needed for reliability, so I've put 1000us
 #define BYTEWAIT 1000
 
 // ========== XT variants of vars above ==========
@@ -94,7 +94,7 @@ bool din_dead() {
     return ( !gpio_get(PS2_DATA_IN) && !gpio_get(PS2_CLOCK_IN) );
 }
 
-// Try initalising with the computers keyboard contrller
+// Try initialing with the computers keyboard controller
 bool din_init() {   
     
     // Attempt to connect 5 times before returning as a failure
@@ -151,7 +151,7 @@ int8_t xt_write(unsigned char keycode)
 
         busy_wait_us(XT_CLKFULL);       // Wait while the clock line is high
         setCLOCK(0);                    // Set Clock Low     
-        busy_wait_us(XT_CLKHALF);       // Mimick slower clocking to help compatibility
+        busy_wait_us(XT_CLKHALF);       // Mimic slower clocking to help compatibility
         setCLOCK(1);                    // Set Clock High
     }
 
@@ -191,7 +191,7 @@ void xt_poll() {
 
 // ---- XT Posting the pause key ----
 // Pause keys lack a release code and instead have one long ar of codes. 
-// More memory effient to use a function instead of translation table
+// More memory efficient to use a function instead of translation table
 uint8_t xt_pause_press() {
     xt_write(0xE1);
     xt_write(0x1D);
@@ -317,7 +317,7 @@ int8_t at_read(unsigned char * value) {
         fflush(stdout);
     #endif
 
-    // If the partity doesn't match, return parity fail error
+    // If the parity doesn't match, return parity fail error
     if (rec_parity != cal_parity) { return DIN_RET_PRFAIL; }
     
     // return successful read
@@ -326,7 +326,7 @@ int8_t at_read(unsigned char * value) {
 
 // ---- AT Posting the pause key ----
 // Pause keys lack a release code and instead have one long ar of codes. 
-// More memory effient to use a function instead of translation table
+// More memory efficient to use a function instead of translation table
 uint8_t at_pause_press() {
     at_write(0xe1);
     at_write(0x14);
@@ -541,7 +541,7 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
         at_write(0x83);
         
         #if DEBUG > 0
-        printf("AT Command Set: Read ID");
+        printf("AT Command Set: Read ID\n");
         fflush(stdout);
         #endif
 
@@ -572,7 +572,7 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
         }
 
         #if DEBUG > 0
-        printf("AT command Set: Set Scan Code Set");
+        printf("AT command Set: Set Scan Code Set\n");
         fflush(stdout);
         #endif 
 
@@ -592,17 +592,10 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
     case SET_RESET_LEDS: //set/reset LEDs
         //== The host follows this command with one argument byte, that specifies
         //== the state of the keyboard's Num Lock, Caps Lock, and Scroll Lock LEDs
-        printf("leds\n");
         ps2ack();
         if(!at_read(leds)) ps2ack(); //do nothing with the rate
-        
-        //if ( kbd_data.kbd_count > 0 ) {
-        //    set_locks_from_din(*leds);
-        //}
 
-        printf("ballsvalue: %d\n",  kbd_data.cmd_set.led_state);
         kbd_data.cmd_set.led_state = *leds;
-        printf("valuevalue: %d\n",  kbd_data.cmd_set.led_state);
         
         #ifdef DEBUG
         printf("AT Command Set: Set/Reset LEDS: %x\n", *leds);
@@ -623,7 +616,7 @@ int8_t keyboard_handle(unsigned char *leds) {
     // If the DIN port is currently busy or something.
     if ( !din_available() )  { return DIN_RET_UNAVAIL; }
 
-    unsigned char c;                        // Char stores data recieved from computer for KBD
+    unsigned char c;                        // Char stores data received from computer for KBD
     int8_t readresult = at_read(&c);        // Store the return of the read command.
 
     if ( readresult == DIN_RET_SUCC ) { 
@@ -641,9 +634,9 @@ int8_t keyboard_handle(unsigned char *leds) {
 // Keyboard button is pressed, takes usbhid keycode and coverts it ps2 keycode for writing to ps2 out
 uint8_t keyboard_make( unsigned char usbhidcode ) {
     
-    // ========== Din initialised ==========
-    // Don't talk over the DIN port if we don't know we have a connecton to a host PC
-    // It might initerupt the inita;ization process
+    // ========== Din initialized ==========
+    // Don't talk over the DIN port if we don't know we have a connection to a host PC
+    // It might interrupt the initialization process
     if ( !kbd_data.din_present || !kbd_data.din_initalised ) {
         return(0);
     }
@@ -656,7 +649,7 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
     };
 
     // ========== Unknown Code ==========
-    // Incase the usbhid code sent is unknown, just ignore it
+    // In case the usbhid code sent is unknown, just ignore it
     if ( ( usbhidcode > 0xA4 && usbhidcode < 0xE0 ) || ( usbhidcode > 0xE7 ) ) {
         return 0; //TMP
     };
@@ -664,8 +657,8 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
     // Loop through out look up array
     for(uint8_t i = 0 ; i < 2 ; i++) {   
         
-        // ========== Modifers ==========
-        // Modifer key scan codes are stored in a different lookup table.
+        // ========== Modifiers ==========
+        // Modifier key scan codes are stored in a different lookup table.
         if ( usbhidcode >= 0xE0 ) { 
 
             // Keyboard type
@@ -674,7 +667,7 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
             switch (kbd_data.persistent.kbd_type) {
 
             case 0x00:  // XT
-                if ( USB2PS2SMake[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifer is not zero
+                if ( USB2PS2SMake[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifier is not zero
                     xt_write( USB2PS2SMake[usbhidcode - 0xE0][0x00][i] ); 
                 };
                 break;
@@ -713,11 +706,11 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
 
         // Keyboard type
         // XT keyboards are set 1 only and do not have a method to switch scan codes. 
-        // So we hard code the set to set 1 when in xt keyboard mode
+        // So we hard code the set to set 1 when in XT keyboard mode
         switch (kbd_data.persistent.kbd_type) {
 
         case 0x00:  // XT
-            if ( USB2PS2Make[usbhidcode][0x00][i] ) { // If lookup scancode modifer is not zero
+            if ( USB2PS2Make[usbhidcode][0x00][i] ) { // If lookup scancode modifier is not zero
                 xt_write( USB2PS2Make[usbhidcode][0x00][i] ); 
             };
             break;
@@ -734,12 +727,12 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
     return 0;
 }
 
-// Keyboard butons is depressed, takes usbhid keycode and convers it to ps2 keycode for writing to ps2 out
+// Keyboard buttons is depressed, takes usbhid keycode and converts it to ps2 keycode for writing to ps2 out
 uint8_t keyboard_break( unsigned char usbhidcode ) {
 
-    // ========== Din initialised ==========
-    // Don't talk over the DIN port if we don't know we have a connecton to a host PC
-    // It might initerupt the inita;ization process
+    // ========== Din initialized ==========
+    // Don't talk over the DIN port if we don't know we have a connection to a host PC
+    // It might interrupt the initialization process
     if ( !kbd_data.din_present || !kbd_data.din_initalised ) {
         return(0);
     }
@@ -752,7 +745,7 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
     };
 
     // ========== Unknown Code ==========
-    // Incase the usbhid code sent is unknown, just ignore it
+    // In case the usbhid code sent is unknown, just ignore it
     if ( ( usbhidcode > 0xA4 && usbhidcode < 0xE0 ) || ( usbhidcode > 0xE7 ) ) {
         return 0; //TMP
     }
@@ -760,17 +753,17 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
     // Loop through out look up array
     for(uint8_t i = 0 ; i < 3 ; i++) {
 
-        // ========== Modifers ==========
-        // Modifer key scan codes are stored in a different lookup table.
+        // ========== Modifier ==========
+        // Modifier key scan codes are stored in a different lookup table.
         if ( usbhidcode >= 0xE0 ) {
       
             // Keyboard type
             // XT keyboards are set 1 only and do not have a method to switch scan codes. 
-            // So we hard code the set to set 1 when in xt keyboard mode
+            // So we hard code the set to set 1 when in XT keyboard mode
             switch (kbd_data.persistent.kbd_type) {
 
             case 0x00:  // XT
-                if ( USB2PS2SBreak[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifer is not zero
+                if ( USB2PS2SBreak[usbhidcode - 0xE0][0x00][i] ) { // If lookup scancode modifier is not zero
                     xt_write( USB2PS2SBreak[usbhidcode - 0xE0][0x00][i] ); 
                 };
                 break;
@@ -806,11 +799,11 @@ uint8_t keyboard_break( unsigned char usbhidcode ) {
    
         // Keyboard type
         // XT keyboards are set 1 only and do not have a method to switch scan codes. 
-        // So we hard code the set to set 1 when in xt keyboard mode
+        // So we hard code the set to set 1 when in XT keyboard mode
         switch (kbd_data.persistent.kbd_type) {
 
         case 0x00:  // XT
-            if ( USB2PS2Break[usbhidcode][0x00][i] ) { // If lookup scancode modifer is not zero
+            if ( USB2PS2Break[usbhidcode][0x00][i] ) { // If lookup scancode modifier is not zero
                 xt_write( USB2PS2Break[usbhidcode][0x00][i] ); 
             };
             break;

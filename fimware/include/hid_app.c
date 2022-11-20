@@ -26,8 +26,8 @@ CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {   
     // Manually tell TinyUSB that we do actually want data from the connected USB device
-    // I guess only weirdos want their conneced USB device to do something ¯\_(ツ)_/¯
-    //bool claim_endpoint = 0;
+    // I guess only weirdos want their connected USB device to do something ¯\_(ツ)_/¯
+    // bool claim_endpoint = 0;
 
     static uint8_t value = 0;
 
@@ -55,7 +55,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             kbd_data.kbd_count++;                                               // Increment Keyboard counter
 
             // If a host computer is connected, set LED state to the host values
-            // If a host is not connected, stobe the leds to look all cool and hip with the kids daddy-oh
+            // If a host is not connected, strobe the leds to look all cool and hip with the kids daddy-oh
             if ( !kbd_data.din_present ) {  
                 
                 if ( !kbd_data.idle_lock_timer_id ) {
@@ -82,8 +82,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     }
     
     // Manually tell TinyUSB that we do actually want data from the connected USB device
-    // I guess only weirdos want their conneced USB device to do something ¯\_(ツ)_/¯
-    //const bool claim_endpoint = tuh_hid_receive_report(dev_addr, instance);
+    // I guess only weirdos want their connected USB device to do something ¯\_(ツ)_/¯
+    // const bool claim_endpoint = tuh_hid_receive_report(dev_addr, instance);
 
     tuh_hid_receive_report(dev_addr, instance);
 
@@ -112,7 +112,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
     {
         case HID_ITF_PROTOCOL_MOUSE:
 
-            --mouse_data.mouse_count;       // Deincrement the mouse counter
+            --mouse_data.mouse_count;       // Decrement the mouse counter
 
             if ( mouse_data.mouse_count <= 0 )
             {   
@@ -132,7 +132,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
             // Break typematic when a usb keyboard is disconnected because the typematic key could be from the disconnected keyboard/
             kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
             
-            // ========== Rebuid stored data arrays ==========
+            // ========== Rebuild stored data arrays ==========
             // We need to rebuild the arrays of stored data to account for the missing keyboard. 
             uint8_t newkbd_tusb_addr[4][2]; uint8_t j = 0;
             hid_keyboard_report_t newkbd_tusb_prev_report[4];
@@ -190,7 +190,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         // Process Keyboard Reports
         case HID_ITF_PROTOCOL_KEYBOARD: 
 
-            // Check is keybaord is valid
+            // Check is keyboard is valid
             if ( !is_kb_connected(dev_addr, instance) ) { break; }
 
             process_kbd_report( dev_addr, instance, (hid_keyboard_report_t const*) report );
@@ -211,7 +211,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     }
 
     // Manually tell TinyUSB that we do actually want data from the connected USB device
-    // I guess only weirdos want their conneced USB device to do something ¯\_(ツ)_/¯
+    // I guess only weirdos want their connected USB device to do something ¯\_(ツ)_/¯
     bool claim_endpoint = tuh_hid_receive_report(dev_addr, instance);
 
     #if DEBUG > 0

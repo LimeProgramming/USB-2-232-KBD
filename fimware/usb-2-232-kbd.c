@@ -39,7 +39,7 @@ unsigned char leds;
 /*---------------------------------------*/
 int main(){
 
-    // Mild underclock
+    // Mild under clock
     set_sys_clock_khz(120000, true);
 
     stdio_init_all();           // pico SDK
@@ -61,7 +61,7 @@ int main(){
 
     // Init the reset pin
     init_pinheader(RESET_FLASH);  
-    sleep_us(500);         // wait a bit to avoid false postitive
+    sleep_us(500);         // wait a bit to avoid false positive
 
     // If the reset pin is closed on startup
     if ( !gpio_get(RESET_FLASH) ) {   
@@ -98,7 +98,7 @@ int main(){
         
       init_pinheader(dipswpins[i]);           // init Dip Switch Pins
       
-      sleep_us(20000);                        // Wait a bit to avoid false postitive
+      sleep_us(20000);                        // Wait a bit to avoid false positive
 
       // Set up IRQ callbacks on Dip Switch Pins
       gpio_set_irq_enabled_with_callback(dipswpins[i], GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &dipswGPIOCallback);
@@ -161,7 +161,7 @@ int main(){
           gpio_put( PS2_DATA_OUT, 1);
         }
 
-      // Else set up an IRQ to flag Din as pressent when pc is powered on. 
+      // Else set up an IRQ to flag Din as present when pc is powered on. 
       } else {
         gpio_set_irq_enabled_with_callback(PS2_CLOCK_IN, GPIO_IRQ_EDGE_RISE , true, &dinPresentingCallback);
       }
@@ -287,13 +287,13 @@ int main(){
 
 
         // ----- Keyboard Leds -----
-        // I've attempted this several differnt ways, some smarter and some dumber. However I kept having problems with TinyUSB being terrible
+        // I've attempted this several different ways, some smarter and some dumber. However I kept having problems with TinyUSB being terrible
         // This seems to be a more stable way of setting the led state at least for just the one keyboard. 
         // Changing the LED state of multiple keyboards require strange timing and some luck
         if ( kbd_data.cmd_set.led_state != AT_KB_LED_UNCHANGED ) {
           
           update_kbd_locks();                               // Update the LEDs on the fist most connected keyboard
-          tuh_task();                                       // TinyUSB host task, calling this immidately seems to help reduce errors 
+          tuh_task();                                       // TinyUSB host task, calling this immediately seems to help reduce errors 
           kbd_data.cmd_set.led_state = AT_KB_LED_UNCHANGED; // Re-set LED state value
         };
 
@@ -313,7 +313,7 @@ int main(){
           } 
 
 
-        // ----- Are we initialised to the host pc as a keyboard?
+        // ----- Are we initialized to the host pc as a keyboard?
         // If DIN Keyboard is not flagged as connected
         if ( !kbd_data.din_initalised ) { 
           
@@ -322,7 +322,7 @@ int main(){
 
               kbd_data.din_initalised = din_init();
 
-              // AT keyboard controllers can handle 100ms between connection attemtps but ps2 controllers can take only 10ms
+              // AT keyboard controllers can handle 100ms between connection attempts but ps2 controllers can take only 10ms
               kbd_data.din_polling_target = delayed_by_us( get_absolute_time(), (kbd_data.din_initalised) ? 10000 : 5000 );
             }
 
@@ -342,15 +342,14 @@ int main(){
             // Disconnection error
             case DIN_RET_DISCONN:
               if ( kbd_data.din_conn_fail++ >= 10 ) {
-                if ( kbd_data.kbd_count > 0 ) {
-
-                  //add_alarm_in_ms(100, start_idle_leds, NULL, true);          // Create an alarm for IDLE leds
-                // TODO: make this a timer thing
-                //set_locks_from_din(kbd_data.kbd_addr[0] , kbd_data.kbd_inst[0], AT_KB_LED_NCS);
-                }
-
+                
                 // Reset the keyboard variables
                 reset_kbd_defaults();
+
+                // Set up a timer for idle locks if it somehow isn't running 
+                if ( kbd_data.idle_lock_timer_id == 0 ) {
+                  kbd_data.idle_lock_timer_id = alarm_pool_add_alarm_at(alarm_pool_get_default(), delayed_by_ms(get_absolute_time(), 800), idle_kbd_locks, (void*)(13), true); 
+                }
 
                 // Enable IRQ listening for Din present
                 gpio_set_irq_enabled_with_callback(PS2_CLOCK_IN, GPIO_IRQ_EDGE_RISE , true, &dinPresentingCallback);
