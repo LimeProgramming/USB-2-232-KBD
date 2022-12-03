@@ -32,7 +32,7 @@ static absolute_time_t usb_polling_target;
 //static absolute_time_t din_polling_target;
 //static absolute_time_t ps2_kbd_conn_target;
 
-unsigned char leds;
+//unsigned char leds;
 
 /*---------------------------------------*/
 //                  Main                 //
@@ -105,7 +105,8 @@ int main(){
       }
 
     initPersistentSet();        // try to load persistent settings.
-    
+  
+
     /*---------------------------------------*/
     //                KBD PINS               //
     /*---------------------------------------*/
@@ -332,7 +333,7 @@ int main(){
           // Poke the PC every 10 ms for any updates.
           if ( time_reached(kbd_data.din_polling_target) ) {
 
-            uint8_t kbdret = keyboard_handle(&leds);
+            uint8_t kbdret = pool_din_kbd();
 
             switch (kbdret) {
             // Timeout

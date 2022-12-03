@@ -241,14 +241,6 @@ typedef struct  {
   // 255 = first time execution | false = ran before.
   uint8_t firstrun;
 
-  // ----- BIOS OVERWRITES -----
-
-  // Force the system to use 
-  // 0 = auto | 1 = Force on | 2 = Force off
-  uint8_t ow_numlock;
-  uint8_t ow_scrllock;
-  uint8_t ow_capslock;
-
   // Set your keyboard type (XT type currently not supported)
   // 0 -> for XT | 1 -> AT
   uint8_t kbd_type;

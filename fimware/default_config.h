@@ -54,11 +54,11 @@
 #define KB_MAX_KEYBOARDS  4
 
 // Set your keyboard type (XT type currently not supported)
-#define KB_TYPE  1          // 0 -> XT | 1 -> AT/PS2
+//#define KB_TYPE  1          // 0 -> XT | 1 -> AT/PS2
 
 // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway
 // Does not apply to AT/ps2 keyboards
-#define KB_XTCLONE 1        // 0 -> IBM XT | 1 --> XT Clone
+//#define KB_XTCLONE 1        // 0 -> IBM XT | 1 --> XT Clone
 
 
 /*---------------------------------------*/
@@ -168,13 +168,6 @@ static uint8_t default_xtclone = 1 ;            // 0 -> IBM XT | 1 --> XT Clone
 // Auto will pick the scan code set based on keyboard type above and the ps2 command set
 //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set2 | 3 -> set 3 (rarely used)
 static uint8_t default_ps2codeset = 0;
-
-//==-- BIOS LOCK OVERWRITES
-// 0 = auto | 1 = Force on | 2 = Force off
-static uint8_t default_ow_numlock  = 0;
-static uint8_t default_ow_scrllock = 0;
-static uint8_t default_ow_capslock = 0;
-
 
 
 /*---------------------------------------*/

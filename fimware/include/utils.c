@@ -487,18 +487,6 @@ void loadPersistentKBDDefaults() {
   if ( (default_keyboard_type == 0) || (default_keyboard_type == 1) ) { kbd_data.persistent.kbd_type = default_keyboard_type; }
   else                                                                { kbd_data.persistent.kbd_type = 1;}
 
-  // Bios lock overwrite, numlock
-  if ( (default_ow_numlock == 0) || (default_ow_numlock == 1) || (default_ow_numlock == 2) )  { kbd_data.persistent.ow_numlock = default_ow_numlock; }
-  else                                                                                        { kbd_data.persistent.ow_numlock = 0; }
-
-  // Bios lock overwrite, scroll lock
-  if ( (default_ow_scrllock == 0) || (default_ow_scrllock == 1) || (default_ow_scrllock == 2) ) { kbd_data.persistent.ow_scrllock = default_ow_scrllock; }
-  else                                                                                          { kbd_data.persistent.ow_scrllock = 0; }
-
-  // Bios lock overwrite, caps lock
-  if ( (default_ow_capslock == 0) || (default_ow_capslock == 1) || (default_ow_capslock == 2) ) { kbd_data.persistent.ow_capslock = default_ow_capslock; }
-  else                                                                                          { kbd_data.persistent.ow_capslock = 0; }
-
   // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway, does not apply to AT/ps2 keyboards
   // 0 -> IBM XT | 1 --> XT Clone
   if ( (default_xtclone == 0) || (default_xtclone == 1) )     { kbd_data.persistent.kbd_xtclone = default_xtclone; }
@@ -677,16 +665,6 @@ void initPersistentSet() {
     printf("XT Compatibility Type: %s\n", (kbd_data.persistent.kbd_xtclone ? "XT CLone" : "ibmXT") );
     fflush(stdout);
 
-    printf("BIOS LOCK OVERWRITES\n");
-    fflush(stdout);
-
-    printf("Numlock: %d | scrollock: %d | capslock: %d \n",
-      kbd_data.persistent.ow_numlock,
-      kbd_data.persistent.ow_scrllock,
-      kbd_data.persistent.ow_capslock
-    );
-    fflush(stdout);
-
     #endif // enable keyboard
 
   #endif
@@ -750,12 +728,9 @@ void savePersistentSet() {
 
   #if KB_ENABLE
   buffer[128] =  kbd_data.persistent.firstrun;
-  buffer[129] =  kbd_data.persistent.ow_numlock;
-  buffer[130] =  kbd_data.persistent.ow_scrllock;
-  buffer[131] =  kbd_data.persistent.ow_capslock;
-  buffer[132] =  kbd_data.persistent.kbd_type;
-  buffer[133] =  kbd_data.persistent.kbd_xtclone;
-  buffer[134] =  kbd_data.persistent.kbd_ps2_codeset;
+  buffer[129] =  kbd_data.persistent.kbd_type;
+  buffer[130] =  kbd_data.persistent.kbd_xtclone;
+  buffer[131] =  kbd_data.persistent.kbd_ps2_codeset;
   #endif // enable keyboard
 
   // Halt all interrupts to avoid errors
@@ -839,9 +814,6 @@ void loadPersistentSet() {
   
   #if KB_ENABLE
   kbd_data.persistent.firstrun = flash_target_contents[j];
-  kbd_data.persistent.ow_numlock = flash_target_contents[++j];
-  kbd_data.persistent.ow_scrllock = flash_target_contents[++j];
-  kbd_data.persistent.ow_capslock = flash_target_contents[++j];
   kbd_data.persistent.kbd_type = flash_target_contents[++j];
   kbd_data.persistent.kbd_xtclone = flash_target_contents[++j];
   kbd_data.persistent.kbd_ps2_codeset = flash_target_contents[++j];

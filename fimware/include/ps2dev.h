@@ -20,7 +20,7 @@
     // -edited
     void initps2pins();
     bool din_init();
-    int8_t keyboard_handle(unsigned char *leds);
+    int8_t pool_din_kbd();
 
     int8_t at_write(unsigned char data);
     int8_t at_read(unsigned char * data);

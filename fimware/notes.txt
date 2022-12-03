@@ -1,0 +1,96 @@
+ps2 scancodes
+http://www.vetra.com/scancodes.html
+http://www.seasip.info/VintagePC/ibm_1397000.html
+https://www.win.tue.nl/~aeb/linux/kbd/scancodes-5.html
+https://web.archive.org/web/20030701121507/http://microsoft.com/hwdev/download/tech/input/translate.pdf
+https://wiki.osdev.org/PS/2_Keyboard#Special_Bytes
+
+
+ps2 protocol
+http://www-ug.eecg.toronto.edu/msl/nios_devices/datasheets/PS2%20Keyboard%20Protocol.htm
+
+XT protocol
+http://www.ccgcpu.com/2019/02/14/the-xt-part-4-adapting-a-modernish-keyboard/#:~:text=Under%20the%20XT%20protocol%2C%20the%20keyboard%20was%20designed,XT%20will%20continuously%20pull%20the%20CLK%20line%20low.
+
+
+    /*
+    1. Read clock and data lines (your lines should be set to input) Wait until both are high.
+    2. Set your clock and data lines to output.
+    3. Set your data output to 0, wait for 50 usec
+    4. Set the clock output to low, wait for 50 usec.
+    5. Raise the clock output.
+    6. Repeat (4,5) for a data 1
+    7. Repeat (4,5) for each of 8 data bits
+    8. Raise the data line
+    9. Set clock and data lines to input (the clock line will be pulled low until the XT grabs the keyboard data).
+    */
+
+
+    while (bit < 0x0100) {
+        if ( gpio_get(PS2_DATA_IN) ) {
+            data = data | bit;
+            calculated_parity ^= 1;
+        } else {
+            calculated_parity ^= 0;
+        }
+        
+        bit <<= 1;
+        
+        // Jiggle the clock line
+        busy_wait_us(CLKHALF); /**/ setCLOCK( 0 ); /**/ busy_wait_us(CLKFULL); /**/ setCLOCK( 1 ); /**/ busy_wait_us(CLKHALF);
+    }
+
+    // Did we receive a prity bit. Delay had been done at the end of the previous loop, so we're ready for the partity bit
+    received_parity = gpio_get(PS2_DATA_IN);
+
+    // Jiggle the clock
+    busy_wait_us(CLKHALF); /**/ 
+    setCLOCK( 0 ); 
+    busy_wait_us(CLKFULL); /**/ 
+    setCLOCK( 1 );
+    busy_wait_us(CLKHALF);
+
+    // Stop bit
+    busy_wait_us(CLKHALF);
+    setDATA( 0 );
+    setCLOCK( 0 );
+    busy_wait_us(CLKFULL);
+    setCLOCK( 1 );
+    busy_wait_us(CLKHALF);
+    setDATA( 1 );
+
+
+
+ //add_alarm_in_ms(100, flashkbdledson, (void*) (uintptr_t) kbd_data.kbd_count, true);
+
+
+
+
+
+
+
+
+// Bios locks overwrite, scrapped feature
+I couldn't get it to work in a way I liked
+
+
+
+ 
+        if ( kbd_data.bios_lock_ow == false) {
+            kbd_data.bios_lock_ow = true; // Set this here to avoid an infinate loop
+
+            // ===== Num Lock Key     
+            if( (  kbd_data.persistent.ow_numlock == 1 && !( ( kbd_data.cmd_set.led_state >> 1 ) & 0x01 ) ) ||  // If numlock is forced on and it is currently off, tap the numlock key
+                (  kbd_data.persistent.ow_numlock == 2 &&    ( kbd_data.cmd_set.led_state >> 1 ) & 0x01 )       // If numlock is forced off and it is currently on, tap the numlock key
+              ){   keyboard_make(0x53);        keyboard_break(0x53);        pool_din_kbd();}; 
+
+            // ===== Scroll Lock Key
+            if(  ( kbd_data.persistent.ow_scrllock == 1 && !( kbd_data.cmd_set.led_state & 0x01 ) ) ||  // If scrolllock is forced on and it is currently off, tap the scrolllock key
+                 ( kbd_data.persistent.ow_scrllock == 2 &&  ( kbd_data.cmd_set.led_state & 0x01 ) )     // If scrolllock is forced off and it is currently on, tap the scrolllock key
+              ){   keyboard_make(0x47);        keyboard_break(0x47);        pool_din_kbd(); };
+            
+            // ===== Caps Lock Key
+            if(  ( kbd_data.persistent.ow_capslock == 1 && !( ( kbd_data.cmd_set.led_state >> 2 ) & 0x01 ) ) || // If Caps lock is forced on and it is currently off, tap the caps lock key
+                 ( kbd_data.persistent.ow_capslock == 2 &&    ( kbd_data.cmd_set.led_state >> 2 ) & 0x01 )      // If caps lock is forced off and it is currently on, tap the caps lock key
+              ){   keyboard_make(0x39);        keyboard_break(0x39);        pool_din_kbd(); printf("caps\n");};
+        }

@@ -253,8 +253,12 @@ int8_t at_write(unsigned char keycode)
     }
 
     // Set our timestamp for the next soonest time we'll send a keycode 
-    BYTEWAIT_TIMESTAMP = delayed_by_us( get_absolute_time(), BYTEWAIT);
-
+    // I'm not sure why but when E0 is sent to ps/2 KBD controllers, the host pulls the clock low for a bit, so we extend the waittime for an E0
+    if ( keycode == 0xE0 ){
+        BYTEWAIT_TIMESTAMP = delayed_by_us( get_absolute_time(), (BYTEWAIT*2));
+    } else {
+        BYTEWAIT_TIMESTAMP = delayed_by_us( get_absolute_time(), (BYTEWAIT));
+    };
 
     #if DEBUG > 0
         printf("Sent Din Data 0x%x\n", keycode);
@@ -347,7 +351,7 @@ void ps2ack()
   return;
 }
 
-int keyboard_reply(unsigned char cmd, unsigned char *leds)
+int keyboard_reply(unsigned char cmd)
 {
     unsigned char val;
 
@@ -593,12 +597,11 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
         //== The host follows this command with one argument byte, that specifies
         //== the state of the keyboard's Num Lock, Caps Lock, and Scroll Lock LEDs
         ps2ack();
-        if(!at_read(leds)) ps2ack(); //do nothing with the rate
 
-        kbd_data.cmd_set.led_state = *leds;
-        
+        if(!at_read(&kbd_data.cmd_set.led_state)) ps2ack(); //do nothing with the rate
+
         #ifdef DEBUG
-        printf("AT Command Set: Set/Reset LEDS: %x\n", *leds);
+        printf("AT Command Set: Set/Reset LEDS: %x\n", kbd_data.cmd_set.led_state);
         fflush(stdout);
         #endif
 
@@ -608,7 +611,7 @@ int keyboard_reply(unsigned char cmd, unsigned char *leds)
     return 0;
 }
 
-int8_t keyboard_handle(unsigned char *leds) {
+int8_t pool_din_kbd() {
     
     // If the din port is potentially dead
     if ( din_dead() ) { return DIN_RET_DISCONN; }
@@ -620,7 +623,7 @@ int8_t keyboard_handle(unsigned char *leds) {
     int8_t readresult = at_read(&c);        // Store the return of the read command.
 
     if ( readresult == DIN_RET_SUCC ) { 
-        return keyboard_reply(c, leds); }
+        return keyboard_reply(c); }
 
     return readresult;                      // return result from the rad function.
 }
@@ -710,13 +713,13 @@ uint8_t keyboard_make( unsigned char usbhidcode ) {
         switch (kbd_data.persistent.kbd_type) {
 
         case 0x00:  // XT
-            if ( USB2PS2Make[usbhidcode][0x00][i] ) { // If lookup scancode modifier is not zero
+            if ( USB2PS2Make[usbhidcode][0x00][i] > 0x00 ) { // If lookup scancode modifier is not zero
                 xt_write( USB2PS2Make[usbhidcode][0x00][i] ); 
-            };
+            }
             break;
 
         case 0x01: // AT
-            if ( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] ) {
+            if ( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] > 0x00 ) {
                 at_write( USB2PS2Make[usbhidcode][kbd_data.cmd_set.scancode_set][i] );
             }
             break;
