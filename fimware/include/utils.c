@@ -1408,17 +1408,20 @@ void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_
 
         keyboard_make( (report->keycode[i]) );
       }
+    }
 
     // ===== Checking for a keyboard break
     // Else the spot in the array does not have a keycode for us, which could mean that we need to send a break
-    } else if ( kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i] ) {
+    if ( kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i] ) {
 
       // If key exists in previous report and not in he current report then the key has been released
-      if ( !key_in_report(report, kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) ){
+     if ( !key_in_report(report, kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) ){
         keyboard_break( (kbd_data.kbd_tusb_prev_report[kbd_number].keycode[i]) );
       }
+  
     }
   }
+
 
   // Overwrite the previous report with the newest report
   kbd_data.kbd_tusb_prev_report[kbd_number] = (hid_keyboard_report_t) *report;

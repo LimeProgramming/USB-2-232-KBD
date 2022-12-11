@@ -217,11 +217,11 @@ int8_t at_write(unsigned char keycode)
     unsigned char parity = 1;
     
     // Clock and Data Line fail
-    //if ( !gpio_get(PS2_CLOCK_IN) && !gpio_get(PS2_DATA_IN) )    { return DIN_RET_DCFAIL; }
+    if ( !gpio_get(PS2_CLOCK_IN) && !gpio_get(PS2_DATA_IN) )    { printf("cd fail"); return DIN_RET_DCFAIL; }
     // Clock Line Fail
-    if ( !gpio_get(PS2_CLOCK_IN) )                              { return DIN_RET_CFAIL; }
+    if ( !gpio_get(PS2_CLOCK_IN) )                              { printf("clock fail"); DIN_RET_CFAIL; }
     // Data Line Fail
-    if ( !gpio_get(PS2_DATA_IN) )                               { return DIN_RET_DFAIL; }
+    if ( !gpio_get(PS2_DATA_IN) )                               { printf("data fail"); return DIN_RET_DFAIL; }
 
      
     for (uint8_t bitcount=0 ; bitcount <= 10 ; bitcount++) {
