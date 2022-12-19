@@ -56,13 +56,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
             // If a host computer is connected, set LED state to the host values
             // If a host is not connected, strobe the leds to look all cool and hip with the kids daddy-oh
-            if ( !kbd_data.din_present ) {  
-                
-                if ( !kbd_data.idle_lock_timer_id ) {
-                    kbd_data.idle_lock_timer_id = alarm_pool_add_alarm_at(alarm_pool_get_default(), delayed_by_ms(get_absolute_time(), 500), idle_kbd_locks, (void*)(13), true);  
-                };
-                
-                printf("alarmid: %d",  kbd_data.idle_lock_timer_id);
+            if ( !kbd_data.din_present && !kbd_data.idle_lock_timer_id ) {
+                kbd_data.idle_lock_timer_id = alarm_pool_add_alarm_at(alarm_pool_get_default(), delayed_by_ms(get_absolute_time(), 500), idle_kbd_locks, (void*)(13), true);  
             };
                 
         break;

@@ -207,28 +207,129 @@ void process_sony_psc(uint8_t const* report, uint16_t len) {
 // this is just a lazy way to prevent errors
 #if CFG_TUH_XINPUT
 
-void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len)
-{
+static xinput_gamepad_t pre_xbox_report_1;
+static xinput_gamepad_t pre_xbox_report_2;
+
+
+// ----------------------------------------
+//          X-Input Tools
+// ----------------------------------------
+
+// is Xinput analog stick motion larger than a tolerance defined as tol
+bool xinput_ana_bigger_than(int16_t new, int16_t old, uint8_t tol) {
+   uint16_t unew = (uint16_t) new;
+   uint16_t uold = (uint16_t) old;
+   
+   return ( (unew - uold > tol) || (uold - unew > tol) );
+};
+
+// is Xinput trigger motion larger than a tolerance defined as tol
+bool xinput_trig_bigger_than(uint8_t new, uint8_t old, uint8_t tol) {
+    return ( (new - old > tol) || (old - new > tol) );
+};
+
+// Checks if there is enough of a difference to qualify as an actual update.
+// This is aimed to just remove the slight jitter that exists is in analog input devices. 
+bool xinput_diff_report(xinput_gamepad_t * new, xinput_gamepad_t * old) {
+    return(
+        xinput_ana_bigger_than(     new->sThumbLX, old->sThumbLX, 10 )          ||
+        xinput_ana_bigger_than(     new->sThumbLY, old->sThumbLY, 10 )          ||
+        xinput_ana_bigger_than(     new->sThumbRX, old->sThumbRX, 10 )          ||
+        xinput_ana_bigger_than(     new->sThumbRY, old->sThumbRY, 10 )          ||
+        (new->wButtons > old->wButtons)                                         ||
+        (old->wButtons > new->wButtons)
+    );
+};
+
+// Work out if analog stick axis value falls outside of the deadzone area
+int16_t xinput_ana_deadzone(int16_t val, uint16_t deadzone_area) {
+    // If val is inside the deadsone_area then return 0
+    if ( (val >= 0 ? val : val * (-1)) < deadzone_area ) { 
+        return 0; 
+    }    
+
+    // if val is outside of deadzone_area then return val as is.
+    return val;
+};
+
+
+// ----------------------------------------
+//          X-Input Report
+// ----------------------------------------
+
+void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
     xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
-    xinput_gamepad_t *p = &xid_itf->pad;
-    const char* type_str;
-    switch (xid_itf->type)
-    {
-        case 1: type_str = "Xbox One";          break;
-        case 2: type_str = "Xbox 360 Wireless"; break;
-        case 3: type_str = "Xbox 360 Wired";    break;
-        case 4: type_str = "Xbox OG";           break;
-        default: type_str = "Unknown";
+    //xinput_gamepad_t *p = &xid_itf->pad;
+
+    //const char* type_str;
+    //switch (xid_itf->type)
+   // {
+    //    case 1: type_str = "Xbox One";          break;
+    //    case 2: type_str = "Xbox 360 Wireless"; break;
+    //    case 3: type_str = "Xbox 360 Wired";    break;
+    //    case 4: type_str = "Xbox OG";           break;
+    //    default: type_str = "Unknown";
+    //}
+    
+    
+    // If pas is connected and it has some new data for us.
+    if (xid_itf->connected && xid_itf->new_pad_data) {
+        
+        // Dump the report data to a non pointer value
+        xinput_gamepad_t xreport;
+        memcpy(&xreport, &xid_itf->pad, sizeof(xinput_gamepad_t));
+
+        // Calculate the deadzone of the analog stick
+        uint8_t storeddeadzone = 20;
+        uint16_t deadzoneval = 32767 * ( (float) storeddeadzone/100 );  // var
+        xreport.sThumbLX = xinput_ana_deadzone(xreport.sThumbLX, deadzoneval);
+        xreport.sThumbLY = xinput_ana_deadzone(xreport.sThumbLY, deadzoneval);
+        xreport.sThumbRX = xinput_ana_deadzone(xreport.sThumbRX, deadzoneval);
+        xreport.sThumbRY = xinput_ana_deadzone(xreport.sThumbRY, deadzoneval);
+
+        // Convert the trigger value from analog to digital based on a trigger value.
+        // ===== Left Trigger
+        if ( xinput_trig_bigger_than, xreport.bLeftTrigger, pre_xbox_report_1.bLeftTrigger, 10) {
+            if ( xreport.bLeftTrigger > 200 ) { xreport.wButtons |= GAMEPAD_LEFT_SHOULDER_2; };     
+        };
+
+        // ===== Right Trigger
+        if ( xinput_trig_bigger_than, xreport.bRightTrigger, pre_xbox_report_1.bRightTrigger, 10) {
+            if ( xreport.bRightTrigger > 200 ) { xreport.wButtons |= GAMEPAD_RIGHT_SHOULDER_2; }; 
+        };  
+
+
+        // If there's enough of a difference in the report for us to care about prcessing the new data.
+        if ( xinput_diff_report(&xreport, &pre_xbox_report_1) ) {   
+
+            //xreport.sThumbLX = (xreport.sThumbLX  / 256);    // === Constrain Left X-Axis 
+            //xreport.sThumbLY = (xreport.sThumbLY  / 256);    // === Constrain Left Y-Axis
+            //xreport.sThumbRX = (xreport.sThumbRX  / 256);    // === Constrain Right X-Axis
+            //xreport.sThumbRY = (xreport.sThumbRY  / 256);    // === Constrain Right Y-Axis
+            
+            printf("Buttons %04x, LX: %d, LY: %d, RX: %d, RY: %d\n",
+                xreport.wButtons, xreport.sThumbLX, xreport.sThumbLY, xreport.sThumbRX, xreport.sThumbRY);
+            fflush(stdout);            
+
+
+            // Is mouse movement inverted
+            //if ( mouse_data.persistent.invert_x ) { xreport.sThumbLX = -( xreport.sThumbLX ); }
+            //if ( mouse_data.persistent.invert_y ) { xreport.sThumbLY = -( xreport.sThumbLY ); }
+
+           // mouse_data.rmpkt.x = constraini( ( mouse_data.rmpkt.x + xreport.sThumbLX ), -30000, 30000);
+            //mouse_data.rmpkt.y = constraini( ( mouse_data.rmpkt.y + (xreport.sThumbLY * (-1)) ), -30000, 30000);
+
+
+            // Increment mouse movement ticker for AVG movement style.
+            //mouse_data.mouse_movt_ticker++;
+
+            //How to check specific buttons
+            //if (p->wButtons & XINPUT_GAMEPAD_A) TU_LOG1("You are pressing A\n");
+            pre_xbox_report_1 = xreport;
+        }
+    
     }
 
-    if (xid_itf->connected && xid_itf->new_pad_data)
-    {
-        TU_LOG1("[%02x, %02x], Type: %s, Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
-             dev_addr, instance, type_str, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY);
-
-        //How to check specific buttons
-        if (p->wButtons & XINPUT_GAMEPAD_A) TU_LOG1("You are pressing A\n");
-    }
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
