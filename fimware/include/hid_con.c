@@ -25,21 +25,28 @@ bool is_sony_ds4(uint8_t dev_addr)
   uint16_t vid, pid;
   tuh_vid_pid_get(dev_addr, &vid, &pid);
 
-  return ( (vid == 0x054c && (pid == 0x09cc || pid == 0x05c4)) // Sony DualShock4 
-           || (vid == 0x0f0d && pid == 0x005e)                 // Hori FC4 
-           || (vid == 0x0f0d && pid == 0x00ee)                 // Hori PS4 Mini (PS4-099U) 
-           || (vid == 0x1f4f && pid == 0x1002)                 // ASW GG xrd controller
-         );
-
+    return  (  (vid == 0x054c && (pid == 0x09cc || pid == 0x05c4))  // Sony DualShock4 
+            || (vid == 0x0f0d && pid == 0x005e)                     // Hori FC4 
+            || (vid == 0x0f0d && pid == 0x00ee)                     // Hori PS4 Mini (PS4-099U) 
+            || (vid == 0x1f4f && pid == 0x1002)                     // ASW GG xrd controller
+            );
 }
 
 // check if device is Sony PlayStation Classic controller
 bool is_sony_psc(uint8_t dev_addr)
 {
-  uint16_t vid, pid;
-  tuh_vid_pid_get(dev_addr, &vid, &pid);
+    uint16_t vid, pid;
+    tuh_vid_pid_get(dev_addr, &vid, &pid);
 
-  return ( (vid == 0x054c && pid == 0x0CDA)); // Sony PlayStation Classic controller 
+    return ( (vid == 0x054c && pid == 0x0CDA)); // Sony PlayStation Classic controller 
+}
+
+// Check if device is a whitelisted controller
+bool is_whitelisted_con(uint8_t dev_addr) 
+{
+    return  (   ( is_sony_ds4(dev_addr) )   // Is PS4 controller
+            ||  ( is_sony_psc(dev_addr) )   // Is Playstation Classic Controller
+    );
 }
 
 
@@ -195,7 +202,7 @@ void process_sony_psc(uint8_t const* report, uint16_t len) {
             break;
     };
 
-    printf("\r\n");
+    //printf("\r\n");
 }
 
 

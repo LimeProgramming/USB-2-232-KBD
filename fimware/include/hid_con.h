@@ -34,6 +34,9 @@ bool is_sony_ds4(uint8_t dev_addr);
 // check if device is Sony PlayStation Classic controller
 bool is_sony_psc(uint8_t dev_addr);
 
+// Check if device is a whitelisted controller
+bool is_whitelisted_con(uint8_t dev_addr);
+
 //--------------------------------------------------------------------+
 //          Sony DualShock 4 Report
 //--------------------------------------------------------------------+

@@ -1435,6 +1435,29 @@ void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_
 }
 
 
+// Called by TinyUSB
+// Release all keyboad keys pressed by a disconnected keyboard. 
+void delete_kbd_report(hid_keyboard_report_t report) {
+
+  // ========== Typematic ==========
+  // Controllers are not typematic so we can do this here
+  // Whenever a new key is pressed or released, typematic is broken
+  kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
+
+  for(uint8_t i = 0 ; i < 8 ; i++) {
+
+    // ========== Modifiers ==========
+    // Modifiers are all sent in as one uint so we need to do bitwise operations to figure out which modifier keys are pressed and which are not.
+    if ( (report.modifier >> i) & 1 ) { keyboard_break( (224 + i) ); } 
+
+    // ========== The rest of the keys ==========
+    // Non modifiers are sent in an array of key-presses
+    if ( i < 6 && report.keycode[i]  ) { keyboard_break( report.keycode[i] ); }
+  }
+
+  return;
+}
+
 
 // ==================================================================================================== //
 //                                            DIN port IRQ                                              //
