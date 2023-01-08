@@ -2,7 +2,6 @@
 #include "pico/multicore.h"
 
 #include "utils.h"
-#include "ctypes.h"
 #include "serial.h"
 #include <default_config.h>
 

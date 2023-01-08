@@ -5,7 +5,6 @@
 #include "pico/stdlib.h"
 
 #include "utils.h"
-#include "ctypes.h"
 #include "hid_con.h"
 #include <default_config.h>
 
@@ -310,6 +309,8 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
             //printf("        %d", pad_report.pad_btns );
             //printf("\r\n");
             //fflush(stdout);
+
+            process_gpd_report(dev_addr, instance, &pad_report);
 
             gpd_data.prev_report = pad_report;
 

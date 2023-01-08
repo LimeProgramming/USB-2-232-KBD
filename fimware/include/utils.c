@@ -13,7 +13,6 @@
 
 #include "utils.h"
 #include "core_1.h"
-#include "ctypes.h"
 #include "serial.h"
 #include "ps2dev.h"
 #include "version.h"
@@ -1052,8 +1051,7 @@ void reset_cycle() {
 }
 
 // Update stored mouse packet
-void update_mousepacket()
-{
+void update_mousepacket() {
   MOUSE_PKT retpkt;
 
   /* ----- Dump in the current mouse button data ----- */
@@ -1489,6 +1487,129 @@ void delete_kbd_report(hid_keyboard_report_t report) {
   return;
 }
 
+/*---------------------------------------*/
+//             GPD Processing            //
+/*---------------------------------------*/
+
+// Called by TinyUSB
+void process_gpd_report(uint8_t dev_addr, uint8_t instance, gamepad_report_t *report) {
+  
+  // ========== Controller Filtering ==========
+  if ( !gpd_data.gpd_con ) {
+
+    #if DEBUG > 0
+    printf("Controller Filtering error, controller not connected\n");
+    fflush(stdout);
+    #endif 
+
+    return;
+
+  } else if ( !(gpd_data.gpd_tusb_addr[0] == dev_addr && gpd_data.gpd_tusb_addr[1] == instance ) ) {
+
+    #if DEBUG > 0
+    printf("Controller Filtering error, report from non approved controller\n");
+    fflush(stdout);
+    #endif 
+
+    return;
+  
+  };
+
+  // ========== Buttons ==========
+  // If there is no change in the buttons just return. We only care about the buttons 
+  if ( report->pad_btns == gpd_data.prev_report.pad_btns ) { return; }
+
+
+  // ========== Typematic ==========
+  // Whenever a new key is pressed or released, typematic is broken
+  kbd_data.cmd_set.tm_key = 0x00;        // USB hid key 0x00 is all zeros in lookup tables
+
+
+  // ========== Buttons Part 2 ==========
+  if ( (report->pad_btns & GPAD_DPAD_UP   ) != ( gpd_data.prev_report.pad_btns & GPAD_DPAD_UP   ) ) {
+    if ( report->pad_btns & GPAD_DPAD_UP )    { keyboard_make(0x52); }
+    else                                      { keyboard_break(0x52); };
+  };
+
+  if ( (report->pad_btns & GPAD_DPAD_DOWN ) != ( gpd_data.prev_report.pad_btns & GPAD_DPAD_DOWN ) ) {
+    if ( report->pad_btns & GPAD_DPAD_DOWN)   { keyboard_make(0x51); }
+    else                                      { keyboard_break(0x51); };
+  };
+
+  if ( (report->pad_btns & GPAD_DPAD_LEFT ) != ( gpd_data.prev_report.pad_btns & GPAD_DPAD_LEFT ) ) {
+    if ( report->pad_btns & GPAD_DPAD_LEFT)   { keyboard_make(0x50); }
+    else                                      { keyboard_break(0x50); };
+  };
+
+  if ( (report->pad_btns & GPAD_DPAD_RIGHT) != ( gpd_data.prev_report.pad_btns & GPAD_DPAD_RIGHT) ) {
+    if ( report->pad_btns & GPAD_DPAD_RIGHT ) { keyboard_make(0x4F); }
+    else                                      { keyboard_break(0x4F); };
+  };
+
+  if ( (report->pad_btns & GPAD_ST        ) != ( gpd_data.prev_report.pad_btns & GPAD_ST        ) ) {
+    if ( report->pad_btns & GPAD_ST )         { keyboard_make(0x29); }
+    else                                      { keyboard_break(0x29); };
+  };
+
+  if ( (report->pad_btns & GPAD_SEL       ) != ( gpd_data.prev_report.pad_btns & GPAD_SEL       ) ) {
+    if ( report->pad_btns & GPAD_SEL)         { keyboard_make(0x28); }
+    else                                      { keyboard_break(0x38); };
+  };
+
+  if ( (report->pad_btns & GPAD_L_STICK   ) != ( gpd_data.prev_report.pad_btns & GPAD_L_STICK   ) ) {
+    if ( report->pad_btns & GPAD_L_STICK)     { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_R_STICK   ) != ( gpd_data.prev_report.pad_btns & GPAD_R_STICK   ) ) {
+    if ( report->pad_btns & GPAD_R_STICK)     { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_LSHLDR    ) != ( gpd_data.prev_report.pad_btns & GPAD_LSHLDR    ) ) {
+    if ( report->pad_btns & GPAD_LSHLDR )     { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_RSHLDR    ) != ( gpd_data.prev_report.pad_btns & GPAD_RSHLDR    ) ) {
+    if ( report->pad_btns & GPAD_RSHLDR )     { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_LSHLDR_2  ) != ( gpd_data.prev_report.pad_btns & GPAD_LSHLDR_2  ) ) {
+    if ( report->pad_btns & GPAD_LSHLDR_2 )   { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_RSHLDR_2  ) != ( gpd_data.prev_report.pad_btns & GPAD_RSHLDR_2  ) ) {
+    if ( report->pad_btns & GPAD_RSHLDR_2 )   { keyboard_make(0x00); }
+    else                                      { keyboard_break(0x00); };
+  };
+
+  if ( (report->pad_btns & GPAD_BTN_1     ) != ( gpd_data.prev_report.pad_btns & GPAD_BTN_1     ) ) {
+    if ( report->pad_btns & GPAD_BTN_1 )      { keyboard_make(0xE0); }
+    else                                      { keyboard_break(0xE0); };
+  };
+
+  if ( (report->pad_btns & GPAD_BTN_2     ) != ( gpd_data.prev_report.pad_btns & GPAD_BTN_2     ) ) {
+    if ( report->pad_btns & GPAD_BTN_2 )      { keyboard_make(0x2C); }
+    else                                      { keyboard_break(0x2C); };
+  };
+
+  if ( (report->pad_btns & GPAD_BTN_3     ) != ( gpd_data.prev_report.pad_btns & GPAD_BTN_3     ) ) {
+    if ( report->pad_btns & GPAD_BTN_3 )      { keyboard_make(0xE2); }
+    else                                      { keyboard_break(0xE2); };
+  };
+
+  if ( (report->pad_btns & GPAD_BTN_4     ) != ( gpd_data.prev_report.pad_btns & GPAD_BTN_4     ) ) {
+    if ( report->pad_btns & GPAD_BTN_4 )      { keyboard_make(0xE1); }
+    else                                      { keyboard_break(0xE1); };
+  };
+
+  return;
+
+}
+  
 
 // ==================================================================================================== //
 //                                            DIN port IRQ                                              //

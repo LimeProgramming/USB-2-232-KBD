@@ -10,7 +10,6 @@
 #include "include/utils.h"
 #include "include/ps2dev.h"
 #include "include/core_1.h"
-#include "include/ctypes.h"
 #include "include/serial.h"
 #include "include/version.h"
 #include "include/hid_app.h"

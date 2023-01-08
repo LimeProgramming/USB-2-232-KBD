@@ -1,5 +1,6 @@
 #include "tusb.h"
 #include "pico.h"
+#include "ctypes.h"
 
 #ifndef UTILS_H_ 
 #define UTILS_H_
@@ -136,5 +137,12 @@ void load_cmd_set_settings();
 void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_t const *report);
 
 void delete_kbd_report(hid_keyboard_report_t report);
+
+
+/*---------------------------------------*/
+//             GPD Processing            //
+/*---------------------------------------*/
+void process_gpd_report(uint8_t dev_addr, uint8_t instance, gamepad_report_t *report);
+
 
 #endif

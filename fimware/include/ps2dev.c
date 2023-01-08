@@ -15,7 +15,6 @@ https://www.tayloredge.com/reference/Interface/atkeyboard.pdf
 
 
 #include "utils.h"
-#include "ctypes.h"
 #include "ps2dev.h"
 //#include "hid_app.h"
 #include "din_lookups.h"

@@ -1,13 +1,10 @@
 #include <stdio.h>
-//#include <string.h>
-//#include <stdlib.h>
 #include "pico/stdlib.h"
 #include "hardware/irq.h"
 #include "hardware/uart.h"
 
 
 #include "utils.h"
-#include "ctypes.h"
 #include "serial.h"
 #include "version.h"
 #include <default_config.h>

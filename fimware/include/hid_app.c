@@ -5,7 +5,6 @@
 #include "pico/stdlib.h"
 
 #include "utils.h"
-#include "ctypes.h"
 #include "hid_app.h"
 #include "hid_con.h"
 #include <default_config.h>
@@ -76,10 +75,11 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             // If device is not a whitelisted controller, try forceing it to use the boot protocol and it might generate generic reports
             // I think, I'm not actually sure. Tinyusb doesn't like to explain itself very often instead opting to point to the ambigious "USB protocol" but the phrase not an actual link to information.
             } else {
-            
+                
+                return;
                 // Try forcing the device to use the boot protocol.
                 // I'm not convinced that this makes a real difference and that this is more like praying to the USB gods which are too busy making yet another type of USB-C to actually make keyboards work properly.
-                tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)(HID_PROTOCOL_BOOT), 1);
+                //tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)(HID_PROTOCOL_BOOT), 1);
 
                 // printf("Mighty USB-IF above, I come before you confessing my sins. I pray for forgiveness in my tresspasses of wanting standard usb devices to work properly. I ask for the englightment of why we need yet another incompatible standard of the holy USB-C. I know that you understand my pain based on the thousands of reports from consumers asking, Oh why ieee, just make my controller work for christ sake, I don't need 20 moniters powered over one USB-C cable!");
                 // fflush(stdout);
@@ -278,8 +278,6 @@ void process_generic_report(uint8_t dev_addr, uint8_t instance, uint8_t const* r
     }
 
     // If the Hid usage isn't something we care about
-    if ( rpt_info->usage_page == HID_USAGE_PAGE_CONSUMER ) { printf("consimer\n"); return; };
-
     if ( rpt_info->usage_page != HID_USAGE_PAGE_DESKTOP ) { return; }
 
     
