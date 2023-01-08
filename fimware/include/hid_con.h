@@ -28,7 +28,7 @@ bool is_whitelisted_con(uint8_t dev_addr);
 // Sony DS4 report layout detail https://www.psdevwiki.com/ps4/DS4-USB
 typedef struct TU_ATTR_PACKED
 {
-  uint8_t x, y, z, rz; // joystick
+  uint8_t lx, ly, rx, ry; // joystick
 
   struct {
     uint8_t dpad     : 4; // (hat format, 0x08 is released, 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW)
@@ -75,7 +75,6 @@ typedef struct TU_ATTR_PACKED
 typedef struct TU_ATTR_PACKED
 {
   struct {
-
     uint8_t triangle    : 1;
     uint8_t circle      : 1;
     uint8_t cross       : 1;
@@ -84,7 +83,6 @@ typedef struct TU_ATTR_PACKED
     uint8_t r2          : 1;
     uint8_t l1          : 1;
     uint8_t r1          : 1;
-    
   };
 
   struct {
