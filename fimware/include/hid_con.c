@@ -283,7 +283,7 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
         pad_report.pad_thumb[0]     = constraini( (pad_report.pad_thumb_raw[0] / 256), -127, 127);
 
         pad_report.pad_thumb_raw[1] = gmp_thumb_deadzoned( xreport.sThumbLY, 65535, 10 );
-        pad_report.pad_thumb[1]     = constraini( (pad_report.pad_thumb_raw[1] / 256), -127, 127);
+        pad_report.pad_thumb[1]     = constraini( (pad_report.pad_thumb_raw[1] / 256) * -1, -127, 127);
 
         pad_report.pad_thumb_raw[2] = gmp_thumb_deadzoned( xreport.sThumbRX, 65535, 10 );
         pad_report.pad_thumb[2]     = constraini( (pad_report.pad_thumb_raw[2] / 256), -127, 127);
@@ -306,10 +306,10 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
         // ========== Update ==========
         // If there's enough of a difference in the report for us to care about prcessing the new data.
         if ( gmp_diff_report(&pad_report, &gpd_data.prev_report, 2) ) {
-            print_binary(pad_report.pad_btns);
-            printf("        %d", pad_report.pad_btns );
-            printf("\r\n");
-            fflush(stdout);
+            //print_binary(pad_report.pad_btns);
+            //printf("        %d", pad_report.pad_btns );
+            //printf("\r\n");
+            //fflush(stdout);
 
             gpd_data.prev_report = pad_report;
 
@@ -405,10 +405,10 @@ void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance) {
             gpd_data.gpd_tusb_addr[1] = 0;
 
             // if our keyboard LED is turned on and no USB keyboard is connected, turn off the keyboard LED
-            if ( gpio_get(LED_KBD) && kbd_data.kbd_count > 0 ) { gpio_put(LED_KBD, 0); };
+            if ( gpio_get(LED_KBD) && kbd_data.kbd_count == 0 ) { gpio_put(LED_KBD, 0); };
 
             // If our mouse LED is turned on and no USB mouse is connected, turn off the mouse LED
-            if ( gpio_get(LED_MOUSE) && mouse_data.mouse_count > 0) {  gpio_put(LED_MOUSE, 0); };            
+            if ( gpio_get(LED_MOUSE) && mouse_data.mouse_count == 0) {  gpio_put(LED_MOUSE, 0); };            
 
         };
     };
