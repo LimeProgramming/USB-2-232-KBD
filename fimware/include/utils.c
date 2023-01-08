@@ -1064,6 +1064,29 @@ void update_mousepacket()
   retpkt.wheel  = constraini( mouse_data.rmpkt.wheel, -15, 15);
   retpkt.update = false;
   
+  /* ----- Inject Thumbstick movement from Gamepad ----- */
+  // ==================================================
+  if ( gpd_data.gpd_con ) {
+
+    // Inject value of prev_report thumbsticks into our new mouse packet, keeping possible inversion in mind
+    // X-Axis
+    if ( mouse_data.persistent.invert_x ) {
+      mouse_data.rmpkt.x = constraini( ( mouse_data.rmpkt.x + (gpd_data.prev_report.pad_thumb[0] * -1) ), -30000, 30000);
+    }  else {
+      mouse_data.rmpkt.x = constraini( ( mouse_data.rmpkt.x + gpd_data.prev_report.pad_thumb[0] ), -30000, 30000);
+    }
+
+    // Y-Axis
+    if ( mouse_data.persistent.invert_y ) {
+      mouse_data.rmpkt.y = constraini( ( mouse_data.rmpkt.y + (gpd_data.prev_report.pad_thumb[1] * -1) ), -30000, 30000);
+    } else {
+      mouse_data.rmpkt.y = constraini( ( mouse_data.rmpkt.y + gpd_data.prev_report.pad_thumb[1] ), -30000, 30000);
+    }
+
+    // Increment mouse movement ticker for AVG movement style.
+    mouse_data.mouse_movt_ticker++;
+  }; // end if ( gpd_data.gpd_con )
+
   /* ----- Handle Specific mouse movement options ----- */
   // ==================================================
   switch ( mouse_data.persistent.mouse_movt_type )
