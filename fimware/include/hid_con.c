@@ -49,6 +49,7 @@ bool is_whitelisted_con(uint8_t dev_addr)
 //          PS4 Controller Example Code
 //--------------------------------------------------------------------+
 
+/*
 // Check if different than 2
 bool diff_than_2(uint8_t x, uint8_t y)
 {
@@ -70,7 +71,7 @@ bool diff_report(sony_ds4_report_t const* rpt1, sony_ds4_report_t const* rpt2)
   return result;
 }
 
-
+*/
 
 // Is gamepad analog stick difference in motion larger than a tolerance defined as tol
 // Also to handle the deadzone, if a value is no longer zero, then return is true
@@ -80,12 +81,6 @@ bool gmp_thumb_diff_than(uint16_t new, uint16_t old, uint8_t tol) {
                 (new == 0 && old != 0) ||
                 (new != 0 && old == 0)
             );
-};
-
-// Is gamepad trigger motion larger than a tolerance defined as tol
-// this is to convert an analog value to a binary one
-bool gmp_trig_bigger_than(uint8_t new, uint8_t old, uint8_t tol) {
-    return ( (new - old > tol) || (old - new > tol) );
 };
 
 // Checks if there is enough of a difference to qualify as an actual update.
@@ -190,19 +185,19 @@ void process_sony_ds4(uint8_t const* report, uint16_t len) {
     // So I convert it to a signed int and subtract 128 on the fly so the zero point on the stick should be 0,0.
 
     // Left X Axis
-    pad_report.pad_thumb_raw[0] = gmp_thumb_deadzoned( ( ((short) ds4_report.lx) - 128), 256, 20 );
+    pad_report.pad_thumb_raw[0] = gmp_thumb_deadzoned( ( ((short) ds4_report.lx) - 128), 256, 10 );
     pad_report.pad_thumb[0]     = constraini(pad_report.pad_thumb_raw[0], -127, 127);
 
     // Left Y Axis
-    pad_report.pad_thumb_raw[1] = gmp_thumb_deadzoned( ( ((short) ds4_report.ly) - 128), 256, 20 );
+    pad_report.pad_thumb_raw[1] = gmp_thumb_deadzoned( ( ((short) ds4_report.ly) - 128), 256, 10 );
     pad_report.pad_thumb[1]     = constraini(pad_report.pad_thumb_raw[1], -127, 127);
 
     // Right X Axis
-    pad_report.pad_thumb_raw[2] = gmp_thumb_deadzoned( ( ((short) ds4_report.rx) - 128), 256, 20 );
+    pad_report.pad_thumb_raw[2] = gmp_thumb_deadzoned( ( ((short) ds4_report.rx) - 128), 256, 10 );
     pad_report.pad_thumb[2]     = constraini(pad_report.pad_thumb_raw[2], -127, 127);
 
     // Right Y Axis
-    pad_report.pad_thumb_raw[3] = gmp_thumb_deadzoned( ( ((short) ds4_report.ry) - 128), 256, 20 );
+    pad_report.pad_thumb_raw[3] = gmp_thumb_deadzoned( ( ((short) ds4_report.ry) - 128), 256, 10 );
     pad_report.pad_thumb[3]     = constraini(pad_report.pad_thumb_raw[3], -127, 127);
 
 
@@ -284,135 +279,89 @@ void process_sony_psc(uint8_t const* report, uint16_t len) {
 // this is just a lazy way to prevent errors
 #if CFG_TUH_XINPUT
 
-static xinput_gamepad_t pre_xbox_report_1;
-static xinput_gamepad_t pre_xbox_report_2;
-
-
-// ----------------------------------------
-//          X-Input Tools
-// ----------------------------------------
-
-// is Xinput analog stick motion larger than a tolerance defined as tol
-bool xinput_ana_bigger_than(int16_t new, int16_t old, uint8_t tol) {
-   uint16_t unew = (uint16_t) new;
-   uint16_t uold = (uint16_t) old;
-   
-   return ( (unew - uold > tol) || (uold - unew > tol) );
-};
-
-// is Xinput trigger motion larger than a tolerance defined as tol
-bool xinput_trig_bigger_than(uint8_t new, uint8_t old, uint8_t tol) {
-    return ( (new - old > tol) || (old - new > tol) );
-};
-
-// Checks if there is enough of a difference to qualify as an actual update.
-// This is aimed to just remove the slight jitter that exists is in analog input devices. 
-bool xinput_diff_report(xinput_gamepad_t * new, xinput_gamepad_t * old) {
-    return(
-        xinput_ana_bigger_than(     new->sThumbLX, old->sThumbLX, 10 )          ||
-        xinput_ana_bigger_than(     new->sThumbLY, old->sThumbLY, 10 )          ||
-        xinput_ana_bigger_than(     new->sThumbRX, old->sThumbRX, 10 )          ||
-        xinput_ana_bigger_than(     new->sThumbRY, old->sThumbRY, 10 )          ||
-        (new->wButtons > old->wButtons)                                         ||
-        (old->wButtons > new->wButtons)
-    );
-};
-
-// Work out if analog stick axis value falls outside of the deadzone area
-int16_t xinput_ana_deadzone(int16_t val, uint16_t deadzone_area) {
-    // If val is inside the deadsone_area then return 0
-    if ( (val >= 0 ? val : val * (-1)) < deadzone_area ) { 
-        return 0; 
-    }    
-
-    // if val is outside of deadzone_area then return val as is.
-    return val;
-};
-
-
 // ----------------------------------------
 //          X-Input Report
 // ----------------------------------------
 
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
     xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
-    //xinput_gamepad_t *p = &xid_itf->pad;
 
-    //const char* type_str;
-    //switch (xid_itf->type)
-   // {
-    //    case 1: type_str = "Xbox One";          break;
-    //    case 2: type_str = "Xbox 360 Wireless"; break;
-    //    case 3: type_str = "Xbox 360 Wired";    break;
-    //    case 4: type_str = "Xbox OG";           break;
-    //    default: type_str = "Unknown";
-    //}
     
-    
-    // If pas is connected and it has some new data for us.
+    // If pad is connected and it has some new data for us.
     if (xid_itf->connected && xid_itf->new_pad_data) {
         
-        // Dump the report data to a non pointer value
+        // ========== Data ==========
+        // ===== Our Custom gamepad report type
+        gamepad_report_t pad_report;        // Make the variable
+        gmp_blank_report(&pad_report);      // Blank the variable
+
+        // ===== Dump the report data to a non pointer value
         xinput_gamepad_t xreport;
         memcpy(&xreport, &xid_itf->pad, sizeof(xinput_gamepad_t));
+        
 
-        // Calculate the deadzone of the analog stick
-        uint8_t storeddeadzone = 20;
-        uint16_t deadzoneval = 32767 * ( (float) storeddeadzone/100 );  // var
-        xreport.sThumbLX = xinput_ana_deadzone(xreport.sThumbLX, deadzoneval);
-        xreport.sThumbLY = xinput_ana_deadzone(xreport.sThumbLY, deadzoneval);
-        xreport.sThumbRX = xinput_ana_deadzone(xreport.sThumbRX, deadzoneval);
-        xreport.sThumbRY = xinput_ana_deadzone(xreport.sThumbRY, deadzoneval);
+        // ========== Thumbsticks ==========
+        // Process data for deadzone and limit travel to a 8 bit int
+        pad_report.pad_thumb_raw[0] = gmp_thumb_deadzoned( xreport.sThumbLX, 65535, 10 );
+        pad_report.pad_thumb[0]     = constraini( (pad_report.pad_thumb_raw[0] / 256), -127, 127);
 
-        // Convert the trigger value from analog to digital based on a trigger value.
-        // ===== Left Trigger
-        if ( xinput_trig_bigger_than, xreport.bLeftTrigger, pre_xbox_report_1.bLeftTrigger, 10) {
-            if ( xreport.bLeftTrigger > 200 ) { xreport.wButtons |= GPAD_LSHLDR_2; };     
-        };
+        pad_report.pad_thumb_raw[1] = gmp_thumb_deadzoned( xreport.sThumbLY, 65535, 10 );
+        pad_report.pad_thumb[1]     = constraini( (pad_report.pad_thumb_raw[1] / 256), -127, 127);
 
-        // ===== Right Trigger
-        if ( xinput_trig_bigger_than, xreport.bRightTrigger, pre_xbox_report_1.bRightTrigger, 10) {
-            if ( xreport.bRightTrigger > 200 ) { xreport.wButtons |= GPAD_RSHLDR_2; }; 
-        };  
+        pad_report.pad_thumb_raw[2] = gmp_thumb_deadzoned( xreport.sThumbRX, 65535, 10 );
+        pad_report.pad_thumb[2]     = constraini( (pad_report.pad_thumb_raw[2] / 256), -127, 127);
+
+        pad_report.pad_thumb_raw[3] = gmp_thumb_deadzoned( xreport.sThumbRY, 65535, 10 );
+        pad_report.pad_thumb[3]     = constraini( (pad_report.pad_thumb_raw[3] / 256), -127, 127);
 
 
+        // ========== Buttons ==========
+        // Dump xreport buttons into our pad report buttons var. The bitwise mask are the same for everything except left and right shoulder 2 buttons
+        pad_report.pad_btns = xreport.wButtons;
+
+        // Left Shoulder 2
+        if ( (xreport.bLeftTrigger > 200)) { pad_report.pad_btns |= GPAD_LSHLDR_2; };
+
+        //Right Shoulder 2
+        if ( (xreport.bRightTrigger > 200)) { pad_report.pad_btns |= GPAD_RSHLDR_2; };
+
+
+        // ========== Update ==========
         // If there's enough of a difference in the report for us to care about prcessing the new data.
-        if ( xinput_diff_report(&xreport, &pre_xbox_report_1) ) {   
+        if ( gmp_diff_report(&pad_report, &gpd_data.prev_report, 2) ) {
+            print_binary(pad_report.pad_btns);
+            printf("        %d", pad_report.pad_btns );
+            printf("\r\n");
+            fflush(stdout);
 
-            //xreport.sThumbLX = (xreport.sThumbLX  / 256);    // === Constrain Left X-Axis 
-            //xreport.sThumbLY = (xreport.sThumbLY  / 256);    // === Constrain Left Y-Axis
-            //xreport.sThumbRX = (xreport.sThumbRX  / 256);    // === Constrain Right X-Axis
-            //xreport.sThumbRY = (xreport.sThumbRY  / 256);    // === Constrain Right Y-Axis
-            
-            printf("Buttons %04x, LX: %d, LY: %d, RX: %d, RY: %d\n",
-                xreport.wButtons, xreport.sThumbLX, xreport.sThumbLY, xreport.sThumbRX, xreport.sThumbRY);
-            fflush(stdout);            
+            gpd_data.prev_report = pad_report;
 
+            //TMP
+            //printf("Buttons %04x, LX: %d, LY: %d, RX: %d, RY: %d\n",
+            //    xreport.wButtons, xreport.sThumbLX, xreport.sThumbLY, xreport.sThumbRX, xreport.sThumbRY);
+            //fflush(stdout);            
 
-            // Is mouse movement inverted
-            //if ( mouse_data.persistent.invert_x ) { xreport.sThumbLX = -( xreport.sThumbLX ); }
-            //if ( mouse_data.persistent.invert_y ) { xreport.sThumbLY = -( xreport.sThumbLY ); }
-
-           // mouse_data.rmpkt.x = constraini( ( mouse_data.rmpkt.x + xreport.sThumbLX ), -30000, 30000);
-            //mouse_data.rmpkt.y = constraini( ( mouse_data.rmpkt.y + (xreport.sThumbLY * (-1)) ), -30000, 30000);
-
-
-            // Increment mouse movement ticker for AVG movement style.
-            //mouse_data.mouse_movt_ticker++;
-
-            //How to check specific buttons
-            //if (p->wButtons & XINPUT_GAMEPAD_A) TU_LOG1("You are pressing A\n");
-            pre_xbox_report_1 = xreport;
-        }
+        };
     
-    }
+    } // end if (xid_itf->connected && xid_itf->new_pad_data) 
 
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
 void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf)
 {
-    TU_LOG1("XINPUT MOUNTED %02x %d\n", dev_addr, instance);
+    
+    const char* type_str;
+    switch (xinput_itf->type)   {
+        case 1: type_str = "Xbox One";          break;
+        case 2: type_str = "Xbox 360 Wireless"; break;
+        case 3: type_str = "Xbox 360 Wired";    break;
+        case 4: type_str = "Xbox OG";           break;
+        default: type_str = "Unknown";
+    }
+
+    TU_LOG1("%s | XINPUT MOUNTED %02x %d\n", type_str, dev_addr, instance);
+
     // If this is a Xbox 360 Wireless controller we need to wait for a connection packet
     // on the in pipe before setting LEDs etc. So just start getting data until a controller is connected.
     if (xinput_itf->type == XBOX360_WIRELESS && xinput_itf->connected == false)
@@ -420,6 +369,7 @@ void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_inter
         tuh_xinput_receive_report(dev_addr, instance);
         return;
     }
+
     tuh_xinput_set_led(dev_addr, instance, 0, true);
     tuh_xinput_set_led(dev_addr, instance, 2, true);
     tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);

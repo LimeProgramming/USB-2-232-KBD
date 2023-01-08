@@ -368,7 +368,6 @@ extern KEYBOARD_DATA kbd_data;
 #define GPAD_BTN_3      0x4000
 #define GPAD_BTN_4      0x8000
 
-
 typedef struct {
 
   /* ===== Buttons ===== */
