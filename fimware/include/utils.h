@@ -80,6 +80,8 @@ void updateStoredDipswitchs();
 
 void blink_led_task(void);
 
+void print_binary(unsigned int number);
+
 
 /*---------------------------------------*/
 //             Travel Limits             //

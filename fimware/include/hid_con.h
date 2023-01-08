@@ -7,23 +7,6 @@
 #include "tusb.h"
 
 
-#define GAMEPAD_DPAD_UP 0x0001
-#define GAMEPAD_DPAD_DOWN 0x0002
-#define GAMEPAD_DPAD_LEFT 0x0004
-#define GAMEPAD_DPAD_RIGHT 0x0008
-#define GAMEPAD_START 0x0010
-#define GAMEPAD_BACK 0x0020
-#define GAMEPAD_LEFT_THUMB 0x0040
-#define GAMEPAD_RIGHT_THUMB 0x0080
-#define GAMEPAD_LEFT_SHOULDER 0x0100
-#define GAMEPAD_RIGHT_SHOULDER 0x0200
-#define GAMEPAD_LEFT_SHOULDER_2 0x0400
-#define GAMEPAD_RIGHT_SHOULDER_2 0x0800
-#define GAMEPAD_BTN_1 0x1000
-#define GAMEPAD_BTN_2 0x2000
-#define GAMEPAD_BTN_3 0x4000
-#define GAMEPAD_BTN_4 0x8000
-
 //--------------------------------------------------------------------+
 //          Controller Detecting Funcs
 //--------------------------------------------------------------------+
@@ -107,7 +90,7 @@ typedef struct TU_ATTR_PACKED
   struct {
     uint8_t select      : 1;
     uint8_t start       : 1;
-    uint8_t dpadss     : 4; //(hat format, 0x08 is released, 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW)
+    uint8_t dpad     : 4; //(hat format, 0x08 is released, 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW)
   };
 
 } sony_psc_report_t;

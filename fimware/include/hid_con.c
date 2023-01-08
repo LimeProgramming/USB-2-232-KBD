@@ -137,72 +137,74 @@ void process_sony_ds4(uint8_t const* report, uint16_t len)
 // Sony PS1 Classic controller
 void process_sony_psc(uint8_t const* report, uint16_t len) {
 
+        /*
+                 ________              ________          __
+                / [_L2_] \            / [_R2_] \           |
+               / [_ L1 _] \          / [_ R1 _] \          | Front Triggers
+             _/------------\________/------------\_      __|
+            /    UP         __    __         (4)   \       |
+           /     ||        |SE|  |ST|     _       _ \      | Main Pad
+          {  L ==||== R  ___        ___  (3) -|- (2) }     |
+           \     ||     /   \      /   \      _     /    __|   
+            \    DN    { LS  }    {  RS }    (1)   /       |
+             \_________ \___/ ____ \___/ _________/        | Control Sticks
+                       \_____/    \_____/                __| 
+         
+        */
+    
+    // Our custom generic gamepad report
+    gamepad_report_t pad_report;
 
-    // previous report used to compare for changes
-    static sony_psc_report_t prev_report = { 0 };
-
+    // Load the weird report from TinyUSB into a custom data type
     sony_psc_report_t psc_report;
-
-
     memcpy(&psc_report, report, sizeof(psc_report));
 
+    // ========== Buttons ==========
+    // This code sucks so much, my god is it terrible
+    if ( psc_report.square      ) pad_report.pad_btns |= GPAD_BTN_1;
+    if ( psc_report.circle      ) pad_report.pad_btns |= GPAD_BTN_2;
+    if ( psc_report.cross       ) pad_report.pad_btns |= GPAD_BTN_3;
+    if ( psc_report.triangle    ) pad_report.pad_btns |= GPAD_BTN_4;
+    if ( psc_report.l1          ) pad_report.pad_btns |= GPAD_LSHLDR;
+    if ( psc_report.r1          ) pad_report.pad_btns |= GPAD_RSHLDR;
+    if ( psc_report.l2          ) pad_report.pad_btns |= GPAD_LSHLDR_2;
+    if ( psc_report.r2          ) pad_report.pad_btns |= GPAD_RSHLDR_2;
+    if ( psc_report.start       ) pad_report.pad_btns |= GPAD_ST;
+    if ( psc_report.select      ) pad_report.pad_btns |= GPAD_SEL;
 
-    if (psc_report.square   ) printf("Square ");
-    if (psc_report.cross    ) printf("Cross ");
-    if (psc_report.circle   ) printf("Circle ");
-    if (psc_report.triangle ) printf("Triangle ");
-
-    if (psc_report.l1       ) printf("L1 ");
-    if (psc_report.r1       ) printf("R1 ");
-    if (psc_report.l2       ) printf("L2 ");
-    if (psc_report.r2       ) printf("R2 ");
-
-
-    if (psc_report.start    ) printf("ST ");
-    if (psc_report.select   ) printf("SEL ");
-
-    // This suck so much
-    switch (psc_report.dpadss)
+    switch (psc_report.dpad)
     {
-        case 0:
-            printf("NW ");
-            break;
-
-        case 1:
-            printf("N ");
-            break;
-
-        case 2:
-            printf("NE ");
-            break;
-
-        case 4:
-            printf("W ");
-            break;
-        
-        
-        case 5:
-            //nothing;
-            break;
-    
-        case 6:
-            printf("E ");
-            break;  
-        
-        case 8:
-            printf("SW ");
-            break;
-        
-        case 9:
-            printf("S ");
-            break;
-
-        case 10:
-            printf("SE ");
-            break;
+        case 0:     pad_report.pad_btns |= GPAD_DPAD_UP; pad_report.pad_btns |= GPAD_DPAD_LEFT;     break;
+        case 1:     pad_report.pad_btns |= GPAD_DPAD_UP;                                            break;
+        case 2:     pad_report.pad_btns |= GPAD_DPAD_UP; pad_report.pad_btns |= GPAD_DPAD_RIGHT;    break;
+        case 4:     pad_report.pad_btns |= GPAD_DPAD_LEFT;                                          break;
+        case 6:     pad_report.pad_btns |= GPAD_DPAD_RIGHT;                                         break;
+        case 8:     pad_report.pad_btns |= GPAD_DPAD_DOWN; pad_report.pad_btns |= GPAD_DPAD_LEFT;   break;
+        case 9:     pad_report.pad_btns |= GPAD_DPAD_DOWN;                                          break;
+        case 10:    pad_report.pad_btns |= GPAD_DPAD_DOWN; pad_report.pad_btns |= GPAD_DPAD_RIGHT;  break;
     };
 
-    //printf("\r\n");
+    // ========== Thumbsticks ==========
+    // PS1 Classic controller doesn't have thumbsticks, so we'll just zero out the value to avoid errors
+    // yeah, I know I could use memset instead
+
+    for ( uint8_t i = 0 ; i < 4 ; i++ ) {
+        pad_report.pad_thumb[i] = 0;
+        pad_report.pad_thumb_raw[i] = 0;
+    }
+
+    // ========== Update ==========
+    // Every time tinyusb host func is called, a report is generated for the PS1 Classic controller regardless if there is a difference or not.
+    // If there is no difference, we don't care about the repeated data
+    if ( pad_report.pad_btns != gpd_data.prev_report.pad_btns ) {
+        print_binary(pad_report.pad_btns);
+        printf("\r\n");
+        fflush(stdout);
+
+        gpd_data.prev_report = pad_report;
+    }
+    
+    return;
 }
 
 
@@ -297,12 +299,12 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
         // Convert the trigger value from analog to digital based on a trigger value.
         // ===== Left Trigger
         if ( xinput_trig_bigger_than, xreport.bLeftTrigger, pre_xbox_report_1.bLeftTrigger, 10) {
-            if ( xreport.bLeftTrigger > 200 ) { xreport.wButtons |= GAMEPAD_LEFT_SHOULDER_2; };     
+            if ( xreport.bLeftTrigger > 200 ) { xreport.wButtons |= GPAD_LSHLDR_2; };     
         };
 
         // ===== Right Trigger
         if ( xinput_trig_bigger_than, xreport.bRightTrigger, pre_xbox_report_1.bRightTrigger, 10) {
-            if ( xreport.bRightTrigger > 200 ) { xreport.wButtons |= GAMEPAD_RIGHT_SHOULDER_2; }; 
+            if ( xreport.bRightTrigger > 200 ) { xreport.wButtons |= GPAD_RSHLDR_2; }; 
         };  
 
 

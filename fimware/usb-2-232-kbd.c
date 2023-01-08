@@ -14,6 +14,7 @@
 #include "include/serial.h"
 #include "include/version.h"
 #include "include/hid_app.h"
+#include "include/hid_con.h"
 #include "default_config.h"
 
 /* ---------------------------------------------------------- */
@@ -22,6 +23,8 @@
 MOUSE_DATA mouse_data;
 
 KEYBOARD_DATA kbd_data;
+
+GAMEPAD_DATA gpd_data;
 
 // Aggregate movements before sending
 CFG_TUSB_MEM_SECTION static hid_mouse_report_t usb_mouse_report_prev;

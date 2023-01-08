@@ -852,6 +852,15 @@ void blink_led_task(void)
 	led_state = !led_state;
 }
 
+// https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format
+void print_binary(unsigned int number)
+{ 
+  if (number >> 1) {
+      print_binary(number >> 1);
+  }
+  printf((number & 1) ? "1" : "0");
+  fflush(stdout);
+}
 
 
 // ==================================================================================================== //
@@ -1421,7 +1430,6 @@ void process_kbd_report(uint8_t dev_addr, uint8_t instance, hid_keyboard_report_
   
     }
   }
-
 
   // Overwrite the previous report with the newest report
   kbd_data.kbd_tusb_prev_report[kbd_number] = (hid_keyboard_report_t) *report;

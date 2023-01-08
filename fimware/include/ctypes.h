@@ -259,8 +259,6 @@ typedef struct  {
 } PERSISTENT_KBD_DATA;
 
 
-//extern PERSISTENT_KBD_DATA pkData;
-
 typedef struct {
   // Should the keyboard be scanning?
   // Set command values of F5h for disable and load defaults and F4 for enable
@@ -291,8 +289,6 @@ typedef struct {
   int8_t led_state;
 
 } KBD_CMD_SET;
-
-
 
 
 typedef struct {
@@ -332,6 +328,87 @@ typedef struct {
 // Extern value, declared again in usb-2-232.c, can be used everywhere ctypes is included.
 extern KEYBOARD_DATA kbd_data;
 
+
+/* -------------------- Controller Data -------------------- */
+// ============================================================
+
+/* Modified ASCI graphic originally from https://www.kernel.org/doc/html/latest/input/gamepad.html
+
+         ________              ________          __
+        / [_L2_] \            / [_R2_] \           |
+       / [_ L1 _] \          / [_ R1 _] \          | Front Triggers
+     _/------------\________/------------\_      __|
+    /    UP         __    __         (4)   \       |
+   /     ||        |SE|  |ST|     _       _ \      | Main Pad
+  {  L ==||== R  ___        ___  (3) -|- (2) }     |
+   \     ||     /   \      /   \      _     /    __|   
+    \    DN    { LS  }    {  RS }    (1)   /       |
+     \_________ \___/ ____ \___/ _________/        | Control Sticks
+               \_____/    \_____/                __| 
+ 
+      |________|______|   |______|___________|
+        D-Pad    Left       Right   Action Pad
+                Stick       Stick
+*/
+
+#define GPAD_DPAD_UP    0x0001
+#define GPAD_DPAD_DOWN  0x0002
+#define GPAD_DPAD_LEFT  0x0004
+#define GPAD_DPAD_RIGHT 0x0008
+#define GPAD_ST         0x0010
+#define GPAD_SEL        0x0020
+#define GPAD_L_STICK    0x0040
+#define GPAD_R_STICK    0x0080
+#define GPAD_LSHLDR     0x0100
+#define GPAD_RSHLDR     0x0200
+#define GPAD_LSHLDR_2   0x0400
+#define GPAD_RSHLDR_2   0x0800
+#define GPAD_BTN_1      0x1000
+#define GPAD_BTN_2      0x2000
+#define GPAD_BTN_3      0x4000
+#define GPAD_BTN_4      0x8000
+
+
+typedef struct {
+
+  /* ===== Buttons ===== */
+  // Bitwise mask defined above
+  //  0000      0000      0000        0000 
+  //  ||||      ||||      ||||        ||||
+  //  |||BTN1   |||L1     |||START    |||UP
+  //  ||BTN2    ||R1      ||SELECT    ||DOWN
+  //  |BTN3     |L2       |L-STICK    |LEFT
+  //  BTN4      R2        R-STICK     RIGHT
+
+  uint16_t pad_btns;
+
+  // [LX LY RX RY]
+  // These values are stored unprocessed for the sake of detecting change in any new values in from the controller
+  int16_t pad_thumb_raw[4];
+
+  // [LX LY RX RY]
+  // Processed and limited values of our controllers thumbsticks
+  int8_t pad_thumb[4];
+
+} gamepad_report_t;
+
+
+typedef struct {
+
+  // Gamepad connected tracker
+  bool gpd_con;
+
+  // 4 keyboards [device addr, device instance]
+  uint8_t gpd_tusb_addr[2];
+
+  // Previous gamepad report
+  gamepad_report_t prev_report;
+
+} GAMEPAD_DATA;
+
+
+// Extern value, declared again in usb-2-232.c, can be used everywhere ctypes is included.
+extern GAMEPAD_DATA gpd_data;
 
 /* -------------------- Make the file work stuff -------------------- */
 
