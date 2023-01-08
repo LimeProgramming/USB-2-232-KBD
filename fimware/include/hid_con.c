@@ -10,6 +10,7 @@
 #include <default_config.h>
 
 
+
 //--------------------------------------------------------------------+
 //          Controller Detecting Funcs
 //--------------------------------------------------------------------+
@@ -45,33 +46,10 @@ bool is_whitelisted_con(uint8_t dev_addr)
 }
 
 
+
 //--------------------------------------------------------------------+
-//          PS4 Controller Example Code
+//          Controller Util Functions
 //--------------------------------------------------------------------+
-
-/*
-// Check if different than 2
-bool diff_than_2(uint8_t x, uint8_t y)
-{
-  return (x - y > 2) || (y - x > 2);
-}
-
-// Check if 2 reports are different enough
-bool diff_report(sony_ds4_report_t const* rpt1, sony_ds4_report_t const* rpt2)
-{
-  bool result;
-
-  // x, y, z, rz must different than 2 to be counted
-  result = diff_than_2(rpt1->lx, rpt2->lx) || diff_than_2(rpt1->ly , rpt2->ly ) ||
-           diff_than_2(rpt1->rx, rpt2->rx) || diff_than_2(rpt1->ry, rpt2->ry);
-
-  // check the reset with mem compare
-  result |= memcmp(&rpt1->ry + 1, &rpt2->ry + 1, sizeof(sony_ds4_report_t)-4);
-
-  return result;
-}
-
-*/
 
 // Is gamepad analog stick difference in motion larger than a tolerance defined as tol
 // Also to handle the deadzone, if a value is no longer zero, then return is true
@@ -127,6 +105,8 @@ int16_t gmp_thumb_deadzoned(int16_t val, uint16_t max_limit, uint8_t deadzone_pc
     // if val is outside of deadzone_area then return val as is.
     return val;
 };
+
+
 
 //--------------------------------------------------------------------+
 //          Controller Report Processors
@@ -271,22 +251,19 @@ void process_sony_psc(uint8_t const* report, uint16_t len) {
 }
 
 
+
 //--------------------------------------------------------------------+
 //          X-Input Callbacks
 //--------------------------------------------------------------------+
+// X-input Lib Source: https://github.com/Ryzee119/tusb_xinput
 
-// With xinput disabled, several data types are missing and the prog refuses to compile.
-// this is just a lazy way to prevent errors
 #if CFG_TUH_XINPUT
 
-// ----------------------------------------
-//          X-Input Report
-// ----------------------------------------
-
+// Report received from GamePad
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
+
     xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
 
-    
     // If pad is connected and it has some new data for us.
     if (xid_itf->connected && xid_itf->new_pad_data) {
         
@@ -348,9 +325,50 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
-void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf)
-{
+// Xinput GamePad connected
+void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf) {
     
+    // ========== Controller filtering ==========
+    // Currently we are supporting only one controller connected at a time.
+    if ( gpd_data.gpd_con ) { return; }
+    else {
+
+        gpd_data.gpd_con = true;
+
+        gpd_data.gpd_tusb_addr[0] = dev_addr;
+        gpd_data.gpd_tusb_addr[1] = instance;
+    };
+
+
+    // ========== Configure the controller ==========
+    // If this is a Xbox 360 Wireless controller we need to wait for a connection packet
+    // on the in pipe before setting LEDs etc. So just start getting data until a controller is connected.    
+    if ( !(xinput_itf->type == XBOX360_WIRELESS && xinput_itf->connected == false) ) {
+
+        // Talk to the end user using the connected controller 
+        tuh_xinput_set_rumble(dev_addr, instance, 200, 200, true);          // Rumble our controller
+        tuh_xinput_set_led(dev_addr, instance, 0, true);                    // Turn off the ring of LEDS
+        tuh_xinput_set_led(dev_addr, instance, 1, true);                    // Turn on LED Quad 1
+        busy_wait_ms(500);                                                  // Wait and allow the end user to enjoy the soothing vibrations of a rumbling controllering in their hands
+        tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);              // Thats enough rumbling
+    };
+    
+
+    // ========== Update the adapters LEDS ==========
+    // Set our ALRT LEDS
+    if ( !gpio_get(LED_KBD) ) { gpio_put(LED_KBD, 1); };                // Turn on the Keyboard LED if it wasn't already
+    if ( !gpio_get(LED_MOUSE) ) { gpio_put(LED_MOUSE, 1); };            // Turn on the Mouse LED is it wasn't already
+    
+
+    // ========== TinyUSB Stuff ==========
+    // Manually tell TinyUSB that we do actually want data from the connected USB device
+    // I guess only weirdos want their connected USB device to do something ¯\_(ツ)_/¯
+    bool claim_endpoint = tuh_xinput_receive_report(dev_addr, instance);
+
+
+    // ========== Debug printouts for Development ==========
+    #if DEBUG > 0
+
     const char* type_str;
     switch (xinput_itf->type)   {
         case 1: type_str = "Xbox One";          break;
@@ -360,25 +378,48 @@ void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_inter
         default: type_str = "Unknown";
     }
 
-    TU_LOG1("%s | XINPUT MOUNTED %02x %d\n", type_str, dev_addr, instance);
+    printf("XINPUT device type %s, with address %d, instance %d was mounted.\r\n", type_str, dev_addr, instance);
+    fflush(stdout);
 
-    // If this is a Xbox 360 Wireless controller we need to wait for a connection packet
-    // on the in pipe before setting LEDs etc. So just start getting data until a controller is connected.
-    if (xinput_itf->type == XBOX360_WIRELESS && xinput_itf->connected == false)
-    {
-        tuh_xinput_receive_report(dev_addr, instance);
-        return;
+    // ---------- Print out for bad USB device.
+    if ( !claim_endpoint ) {
+        printf("Error: cannot request to receive report\r\n");
+        fflush(stdout);
     }
 
-    tuh_xinput_set_led(dev_addr, instance, 0, true);
-    tuh_xinput_set_led(dev_addr, instance, 2, true);
-    tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);
-    tuh_xinput_receive_report(dev_addr, instance);
+    #endif
+
 }
 
-void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance)
-{
-    TU_LOG1("XINPUT UNMOUNTED %02x %d\n", dev_addr, instance);
+// Xinput Gamepad Disconnected
+void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance) {
+
+    // ========== Controller filtering ==========
+    // Are we flagged as having a controller connected?
+    if ( gpd_data.gpd_con ) {
+        
+        // Is the disconnected controller the controller that we have flagged as connected?
+        if ( gpd_data.gpd_tusb_addr[0] == dev_addr && gpd_data.gpd_tusb_addr[1] == instance ) {
+            gpd_data.gpd_con = false;
+            gpd_data.gpd_tusb_addr[0] = 0;
+            gpd_data.gpd_tusb_addr[1] = 0;
+
+            // if our keyboard LED is turned on and no USB keyboard is connected, turn off the keyboard LED
+            if ( gpio_get(LED_KBD) && kbd_data.kbd_count > 0 ) { gpio_put(LED_KBD, 0); };
+
+            // If our mouse LED is turned on and no USB mouse is connected, turn off the mouse LED
+            if ( gpio_get(LED_MOUSE) && mouse_data.mouse_count > 0) {  gpio_put(LED_MOUSE, 0); };            
+
+        };
+    };
+
+    // ========== Debug printouts for Development ==========
+    #if DEBUG > 0
+
+    printf("XINPUT device with address %d, instance %d was unmounted.\r\n", dev_addr, instance);
+    fflush(stdout);
+
+    #endif
 }
 
-#endif
+#endif // #if CFG_TUH_XINPUT

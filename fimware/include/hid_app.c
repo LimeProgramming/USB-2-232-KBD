@@ -188,7 +188,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
         break;
     }
 
-    #if DEBUG
+    #if DEBUG > 0
     printf("HID device with address %d, instance %d was unmounted.\r\n", dev_addr, instance);
     fflush(stdout);
     #endif
@@ -205,7 +205,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             if ( mouse_data.serial_state == 0 ) {
                 process_mouse_report((hid_mouse_report_t const*) report );
             }
-            break;
+        break;
 
         // Process Keyboard Reports
         case HID_ITF_PROTOCOL_KEYBOARD: 
@@ -213,11 +213,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             if ( !is_kb_connected(dev_addr, instance) ) { break; }
 
             process_kbd_report( dev_addr, instance, (hid_keyboard_report_t const*) report );
-            break;
+        break;
 
         // Process Generic Report
         case HID_ITF_PROTOCOL_NONE: 
-        printf("i'm None\n");
         default:  
             if ( is_sony_ds4(dev_addr) ) {
                 process_sony_ds4(report, len);
@@ -239,6 +238,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     // ---------- Print out for bad USB device.
     if ( !claim_endpoint ) {
         printf("Error: cannot request to receive report\r\n");
+        fflush(stdout);
     }
 
     #endif
