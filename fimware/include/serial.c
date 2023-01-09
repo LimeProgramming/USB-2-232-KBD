@@ -15,7 +15,7 @@
 /*---------------------------------------*/
 // Functions which handle the uart and it's settings directly
 
-void init_serial_uart(uint data_bits)
+void init_serial_uart()
 {   
     // Set up the UART with the required speed.
     mouse_data.realbaudrate = uart_init(UART_ID, mouse_data.persistent.baudrate);        
@@ -28,9 +28,10 @@ void init_serial_uart(uint data_bits)
 
     // Turn off FIFO's - we want to do this character by character
     uart_set_fifo_enabled(UART_ID, false);      
-
-    // Set the serial Format
-    set_serial_data(data_bits);
+    
+    // Set number of stop bits
+    if  ( mouse_data.persistent.doublestopbit ) { uart_set_format(UART_ID, 7, 2, UART_PARITY_NONE); } // 7N2
+    else                                        { uart_set_format(UART_ID, 7, 1, UART_PARITY_NONE); } // 7N1
 
     #if DEBUG >0
     // Set up the UART with the required speed.    
@@ -38,12 +39,6 @@ void init_serial_uart(uint data_bits)
     #endif
 }
 
-void set_serial_data(uint data_bits)
-{
-    // Set Double Stop Toggle
-  if  ( mouse_data.persistent.doublestopbit ) { uart_set_format(UART_ID, 7, 2, UART_PARITY_NONE); } // 7N2
-  else                                        { uart_set_format(UART_ID, 7, 1, UART_PARITY_NONE); } // 7N1
-}
 // Called when serial settings are updated. 
 void refresh_serial_uart()
 {
@@ -51,7 +46,7 @@ void refresh_serial_uart()
 
     busy_wait_us(250000);
 
-    init_serial_uart(7);
+    init_serial_uart();
 
     busy_wait_us(250000);
 }
@@ -111,21 +106,17 @@ void serialMouseNego() {
       break;
 
       case THREEBTN:
-        // Set Serial data bits to 8 for the pnp info
-        set_serial_data(8);
 
         for( uint8_t i=0; i < 2; i++ ) { 
           serial_putc(ID_Logitech[i], 7); 
           sleep_us(mouse_data.serialdelay_1B); 
         }
 
-        // Set back to 7 bits for mouse movement
-        set_serial_data(7);
+
       break;
 
       case WHEELBTN:
-        // Set Serial data bits to 8 for the pnp info
-        set_serial_data(8);
+
 
         for( uint8_t i=0; i < 10; i++ )
         {
@@ -139,25 +130,11 @@ void serialMouseNego() {
 
         // Send the last 4 characters
         for( uint8_t i=0; i < 4; i++ ) { uart_putc_raw( UART_ID, ID_Wheelmouse[10][i] ); }
-
-        // Set back to 7 bits for mouse movement
-        set_serial_data(7);
         
       break;
     }
 
     sleep_us(mouse_data.serialdelay_1B);
-}
-
-void printfMousePacket() {
-  printf("Mouse: (%d %d %d)", mouse_data.mpkt.x, mouse_data.mpkt.y, mouse_data.mpkt.wheel);
-
-  printf(" %c%c%c\n",
-      mouse_data.mpkt.left   ? 'L' : '-',
-      mouse_data.mpkt.middle ? 'M' : '-',
-      mouse_data.mpkt.right  ? 'R' : '-');
-
-  return;
 }
 
 // Update stored mouse data and post
@@ -181,10 +158,18 @@ void postSerialMouse() {
         serial_putc(packet,  2);
     }
 
-    /* ---------------------------------------- */
-    // Debug Print Out
+    // ===== Dev DEBUG Printout =====
     #if DEBUG > 0
-    printfMousePacket();
+
+    printf("Mouse: (%d %d %d)", mouse_data.mpkt.x, mouse_data.mpkt.y, mouse_data.mpkt.wheel);
+    fflush(stdout);
+
+    printf(" %c%c%c\n",
+        mouse_data.mpkt.left   ? 'L' : '-',
+        mouse_data.mpkt.middle ? 'M' : '-',
+        mouse_data.mpkt.right  ? 'R' : '-');
+    fflush(stdout);
+
     #endif
 }
 
@@ -206,24 +191,6 @@ volatile int64_t consoleDelay= 10000;       // Force the Uart to run slow to avo
 
 // Numbers 0 -> 9 
 const char validInput[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
-
-const char terminal_header[2][400] = {
-{ // Mouse Only
-  " _  _  ____  ____      ____      ____  ____  ____ \n" \
-  "/ )( \\/ ___)(  _ \\ ___(___ \\ ___(___ \\( __ \\(___ \\ \n" \
-  ") \\/ (\\___ \\ ) _ ((___)/ __/(___)/ __/ (__ ( / __/ \n" \
-  "\\____/(____/(____/    (____)    (____)(____/(____) \n" \
-  "USB to Serial Mouse Adapter | By: CalamityLime"
-},
-
-{ // Mouse and Keyboard
-  " _  _  ____  ____      ____      ____  ____  ____      __ _  ____  ____  \n" \
-  "/ )( \\/ ___)(  _ \\ ___(___ \\ ___(___ \\( __ \\(___ \\ ___(  / )(  _ \\(    \\ \n" \
-  ") \\/ (\\___ \\ ) _ ((___)/ __/(___)/ __/ (__ ( / __/(___))  (  ) _ ( ) D ( \n" \
-  "\\____/(____/(____/    (____)    (____)(____/(____)    (__\\_)(____/(____/ \n" \
-  "USB to Serial Mouse & AT Keyboard Adapter | By: CalamityLime"
-}
-};
 
 // What are valid options for navigating the menu
 #if KB_ENABLE
@@ -481,18 +448,18 @@ const char terminal_warn_msg[2][11][80] = {
 }
 };
 
-const char terminal_shorties[2][15][26] = {
+const char terminal_shorties[2][16][26] = {
 { // English
   {"Enabled"}, {"Disabled"}, {"Low"}, {"Medium"}, {"High"}, {"Very High"}, 
   {"Additive"}, {"Average"}, {"Coast"}, 
   {"Microsoft Two Button"}, {"Logitech Three Button"}, {"Microsoft Wheel"},
-  {"Returning to mouse mode\n"}, {"German"}, {"English"} 
+  {"Returning to mouse mode\n"}, {"German"}, {"English"}, {"Exiting Terminal\n"}
 },
 { // German
   {"Aktiviert"}, {"Deaktiviert"}, {"Niedrig"}, {"Mittel"}, {"Hoch"}, {"Sehr Hoch"}, 
   {"Additiv"}, {"Mittlewert"}, {"Gleiten"}, 
   {"Microsoft Maus"}, {"Logitech Maus"}, {"Microsoft Wheel Maus"},
-  {"Verbindung beendet\n"}, {"Deutsch"}, {"Englisch"} 
+  {"Verbindung beendet\n"}, {"Deutsch"}, {"Englisch"}, {"Terminal Verlassen\n"}
 }
 };
 
@@ -619,14 +586,21 @@ int atoi(char* str) {
 
 void post_header(uart_inst_t * com) {
     
-    switch (KB_ENABLE) {
-    case 0: 
-      term_writes_crlf(com, terminal_header[0]);     // Print the Header for the serial mouse
-      break;
-    case 1:
-      term_writes_crlf(com, terminal_header[1]);     // Print the Header for the serial mouse
-      break;
-    };
+    #if KB_ENABLE
+    // Print Serial mouse and keyboard adapter header
+    term_writes_crlf(com, " _  _  ____  ____      ____      ____  ____  ____      __ _  ____  ____  \n" \
+                          "/ )( \\/ ___)(  _ \\ ___(___ \\ ___(___ \\( __ \\(___ \\ ___(  / )(  _ \\(    \\ \n" \
+                          ") \\/ (\\___ \\ ) _ ((___)/ __/(___)/ __/ (__ ( / __/(___))  (  ) _ ( ) D ( \n" \
+                          "\\____/(____/(____/    (____)    (____)(____/(____)    (__\\_)(____/(____/ \n" \
+                          "USB to Serial Mouse & USB Keyboard to AT/XT Keyboard Adapter | By: CalamityLime"  );
+    #else
+    // Print Serial Mouse only Header
+    term_writes_crlf(com, " _  _  ____  ____      ____      ____  ____  ____ \n" \
+                          "/ )( \\/ ___)(  _ \\ ___(___ \\ ___(___ \\( __ \\(___ \\ \n" \
+                          ") \\/ (\\___ \\ ) _ ((___)/ __/(___)/ __/ (__ ( / __/ \n" \
+                          "\\____/(____/(____/    (____)    (____)(____/(____) \n" \
+                          "USB to Serial Mouse Adapter | By: CalamityLime"               );
+    #endif
 
     term_writec_crlf(com, '\n');                // New Line
     
@@ -1248,6 +1222,40 @@ void term_handle_options(uart_inst_t * com, ushort level1, ushort level2) {
           default:  { term_writes_crlf(com, terminal_shorties[mouse_data.persistent.language][14]); }  break;
         }
 
+        #if KB_ENABLE
+        sleep_us(500000);
+
+        //Keyboard Settings
+        term_writes_crlf(com, "\x0a\x0a");
+        term_writes_crlf(com, terminal_menu_headings[mouse_data.persistent.language][5] );
+        term_writes_crlf(com, terminal_list_options[mouse_data.persistent.language][4][0]);
+        term_writes_crlf(com, "\x3a\x20" );
+
+        switch ( default_keyboard_type )
+        {
+          case 0:   { term_writes_crlf(com, "XT"); }  break;
+          case 1:   { term_writes_crlf(com, "AT/PS2"); }  break;
+        }
+
+        term_writes_crlf(com, "\x0a");
+        term_writes_crlf(com, terminal_list_options[mouse_data.persistent.language][4][1]);
+        term_writes_crlf(com, "\x3a\x20" );
+
+        switch ( default_xtclone )
+        {
+          case 0:   { term_writes_crlf(com, "IBM-XT"); }  break;
+          case 1:   { term_writes_crlf(com, "XT Clone"); }  break;
+        }
+
+        sleep_us(500000);
+
+        //Controller Settings
+        term_writes_crlf(com, "\x0a\x0a");
+        term_writes_crlf(com, terminal_menu_headings[mouse_data.persistent.language][6] );
+        term_writes_crlf(com, terminal_list_options[mouse_data.persistent.language][5][0]);
+        term_writes_crlf(com, "\x3a\x20" );
+        #endif
+
         term_writec_crlf( com, '\x0a');
         term_writec_crlf( com, '\x0a');
         sleep_us(1000000);
@@ -1551,12 +1559,11 @@ bool serial_terminal(uart_inst_t * com, uint64_t ddd) {
 
     term_writec_crlf(com, '\n');
 
-    //if ( settingsUpdated ) {
-    //  savePersistentSet();
-    //  term_writes_crlf(com, terminal_warn_msg[mouse_data.persistent.language][10]);
-    //}
-    
+    #if KB_ENABLE
+    term_writes_crlf(com, terminal_shorties[mouse_data.persistent.language][15]);
+    #else
     term_writes_crlf(com, terminal_shorties[mouse_data.persistent.language][12]);
+    #endif
 
     if ( uartSettingsUpdated ) {
       refresh_serial_uart();      // Reinit serial with updated settings

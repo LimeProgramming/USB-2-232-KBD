@@ -5,7 +5,7 @@
 /*---------------------------------------*/
 
 // All this really does is give printf's out via UART0
-#define DEBUG true          // Debug Flag for things
+#define DEBUG false          // Debug Flag for things
 
 
 /*---------------------------------------*/

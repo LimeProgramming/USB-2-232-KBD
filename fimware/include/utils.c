@@ -919,6 +919,38 @@ int16_t travel_limit_d(int16_t val, double percentage, uint16_t constainval)
   }
 }
 
+int16_t travel_limit_f(int16_t val, float percentage, uint16_t constainval)
+{
+  // Do that first to avoid unnecessary processing 
+  if ( val == 0 || percentage == 0 ) {
+    return 0;
+
+  }else{
+
+    int16_t j;
+
+    // If there is a travel percentage 
+    if ( percentage != 100 ) {
+
+      // Do the actual math
+      j = (int16_t) round( val * percentage );
+
+      // Return now if zero 
+      if (j == 0) {return 0;}
+
+    }else{
+      j = val;
+    }
+
+    // Constrain 
+    if ( constainval != 0 ){
+      j = constraini(j, (constainval * -1), constainval);
+    }
+
+    return j;
+  }
+}
+
 /*---------------------------------------*/
 //            Mouse Processing           //
 /*---------------------------------------*/
@@ -1138,16 +1170,16 @@ void update_mousepacket() {
   
   if ( mouse_data.persistent.use_cosine_smoothing > 0){
 
-    double radianVal;
+    float radianVal;
     
     // Process X Axis
     if (retpkt.x !=0 ){
 
       radianVal = retpkt.x * (3.14 / ( 1536 - (256 * mouse_data.persistent.use_cosine_smoothing ) ) );
-      retpkt.x = travel_limit_d(retpkt.x, cos(radianVal), 0);
+      retpkt.x = travel_limit_f(retpkt.x, cosf(radianVal), 0);
 
       #if DEBUG > 0
-      printf("Cosine smoothed x: old: %d | new: %d | cos: %f\n", retpkt.x, travel_limit_d(retpkt.x, cos(radianVal), 0), cos(radianVal));
+      printf("Cosine smoothed x: old: %d | new: %d | cos: %f\n", retpkt.x, travel_limit_f(retpkt.x, cosf(radianVal), 0), cosf(radianVal));
       #endif
     }
 
@@ -1155,10 +1187,10 @@ void update_mousepacket() {
     if (retpkt.y !=0 ){
 
       radianVal = retpkt.y * (3.14 / ( 1536 - (256 * mouse_data.persistent.use_cosine_smoothing ) ) );
-      retpkt.y = travel_limit_d(retpkt.y, cos(radianVal), 0);
+      retpkt.y = travel_limit_f(retpkt.y, cosf(radianVal), 0);
 
       #if DEBUG > 0
-      printf("Cosine smoothed y: old: %d | new: %d | cos: %f\n", retpkt.y, travel_limit_d(retpkt.y, cos(radianVal), 0), cos(radianVal));
+      printf("Cosine smoothed y: old: %d | new: %d | cos: %f\n", retpkt.y, travel_limit_f(retpkt.y, cosf(radianVal), 0), cosf(radianVal));
       #endif
     }
   }

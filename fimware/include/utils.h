@@ -92,6 +92,8 @@ int16_t travel_limit(int16_t val, uint8_t percentage, uint16_t constainval);
 
 int16_t travel_limit_d(int16_t val, double percentage, uint16_t constainval);
 
+int16_t travel_limit_f(int16_t val, float percentage, uint16_t constainval);
+
 
 /*---------------------------------------*/
 //            Mouse Processing           //

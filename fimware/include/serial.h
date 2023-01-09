@@ -8,9 +8,7 @@
 //          Generic Serial Stuff         //
 /*---------------------------------------*/
 
-void init_serial_uart(uint data_bits);
-
-void set_serial_data(uint data_bits);
+void init_serial_uart();
 
 void refresh_serial_uart();
 
@@ -21,8 +19,6 @@ void refresh_serial_uart();
 void serial_putc(uint8_t *buffer, int size);
 
 void serialMouseNego();
-
-void printfMousePacket();
 
 void postSerialMouse();
 

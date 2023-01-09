@@ -75,8 +75,9 @@
 #define CFG_TUH_HID                 4 // Typical keyboard + mouse device can have 3 - 4 HID devices
 #define CFG_TUH_CDC                 0 // Virtual Com I think
 #define CFG_TUH_MSC                 0 // Mass Storage
-#define CFG_TUH_XINPUT              0 // How many XINPUT controllers you want to support
 #define CFG_TUH_VENDOR              0 // Just fucking broken
+#define CFG_TUH_XINPUT              1 // How many XINPUT controllers you want to support
+
 
 // Max number of devices connected
 #define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // normal hub has 4 ports
