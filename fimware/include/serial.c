@@ -51,41 +51,19 @@ void refresh_serial_uart()
     busy_wait_us(250000);
 }
 
-/*---------------------------------------*/
-//           Serial Mouse Funcs          //
-/*---------------------------------------*/
-
-/* ---------------------------------------------------------- */
-// Mouse ID Strings
-
-// Basic MS Mouse
-uint8_t ID_Microsoft[4] = {1, 0x4D, 0, 0};
-
-// Logitech mouse 'M3' + PNP
-uint8_t ID_Logitech[2][8] = {
-    {13,   0x4D, 0x33, 0x08, 0x01, 0x24, 0x2C, 0x27},
-    {0x29, 0x18, 0x10, 0x10, 0x11, 0x09, 0x00, 0x00} };
-
-// MS Wheel mouse 'MZ@' + PNP
-uint8_t ID_Wheelmouse[11][8] = {
-	{ 82,   0x4D, 0x5A, 0x40, 0x00, 0x00, 0x00, 0x08 },
-	{ 0x01, 0x24, 0x2D, 0x33, 0x28, 0x10, 0x10, 0x10 },
-	{ 0x11, 0x3C, 0x10, 0x10, 0x10, 0x14, 0x10, 0x12 },
-	{ 0x10, 0x10, 0x3C, 0x2D, 0x2F, 0x35, 0x33, 0x25 },
-	{ 0x3C, 0x30, 0x2E, 0x30, 0x10, 0x26, 0x10, 0x21 },
-	{ 0x3C, 0x2D, 0x29, 0x23, 0x32, 0x2F, 0x33, 0x2F },
-	{ 0x26, 0x34, 0x00, 0x29, 0x2E, 0x34, 0x25, 0x2C },
-	{ 0x2C, 0x29, 0x2D, 0x2F, 0x35, 0x33, 0x25, 0x00 },
-	{ 0x0D, 0x00, 0x33, 0x25, 0x32, 0x29, 0x21, 0x2C },
-	{ 0x00, 0x36, 0x25, 0x32, 0x33, 0x29, 0x2F, 0x2E },
-	{ 0x15, 0x16, 0x09, 0x00 } };
-
 // Post mouse data over UART. 
 void serial_putc(uint8_t *buffer, int size){ 
     for( uint8_t i=0; i <= size; i++ )  { 
         uart_putc_raw( UART_ID, buffer[i] ); 
     } 
+    //uart_tx_wait_blocking( UART_ID );
+
+    return;
 }
+
+/*---------------------------------------*/
+//           Serial Mouse Funcs          //
+/*---------------------------------------*/
 
 void serialMouseNego() {
 
@@ -97,44 +75,40 @@ void serialMouseNego() {
     /*---------------------------------------*/
 
     // Wait for UART to be writable
-    while ( !uart_is_writable(UART_ID) ) { sleep_us(mouse_data.serialdelay_1B); }   
+    while ( !uart_is_writable(UART_ID) ) { tight_loop_contents(); }   
 
-    switch ( mouse_data.persistent.mousetype )
-    {
+    switch ( mouse_data.persistent.mousetype ) {
+      // Basic MS Mouse
       case TWOBTN:
-        uart_putc_raw( UART_ID, 0x4D);
+        serial_putc( "\x01\x4D\x00\x00\x00\x00\x00\x00", 7); 
+
       break;
 
+      // Logitech mouse 'M3' + PNP
       case THREEBTN:
-
-        for( uint8_t i=0; i < 2; i++ ) { 
-          serial_putc(ID_Logitech[i], 7); 
-          sleep_us(mouse_data.serialdelay_1B); 
-        }
-
+        serial_putc( "\x0D\x4D\x33\x08\x01\x24\x2C\x27", 7); 
+        serial_putc( "\x29\x18\x10\x10\x11\x09\x00\x00", 7);
 
       break;
 
+      // MS Wheel mouse 'MZ@' + PNP
       case WHEELBTN:
+        serial_putc("\x52\x4D\x5A\x40\x00\x00\x00\x08", 7);
+        serial_putc("\x01\x24\x2D\x33\x28\x10\x10\x10", 7);
+        serial_putc("\x11\x3C\x10\x10\x10\x14\x10\x12", 7);
+        serial_putc("\x10\x10\x3C\x2D\x2F\x35\x33\x25", 7);
+        serial_putc("\x3C\x30\x2E\x30\x10\x26\x10\x21", 7);
+        serial_putc("\x3C\x2D\x29\x23\x32\x2F\x33\x2F", 7);
+        serial_putc("\x26\x34\x00\x29\x2E\x34\x25\x2C", 7);
+        serial_putc("\x2C\x29\x2D\x2F\x35\x33\x25\x00", 7);
+        serial_putc("\x0D\x00\x33\x25\x32\x29\x21\x2C", 7);
+        serial_putc("\x00\x36\x25\x32\x33\x29\x2F\x2E", 7);
+        serial_putc("\x15\x16\x09\x00\x00\x00\x00\x00", 7);
 
-
-        for( uint8_t i=0; i < 10; i++ )
-        {
-          for( uint8_t j=0; j < 8; j++ ) { 
-            uart_putc_raw( UART_ID, ID_Wheelmouse[i][j] ); 
-            sleep_us(mouse_data.serialdelay_1B);
-            }
-
-          sleep_us(mouse_data.serialdelay_1B);
-        }
-
-        // Send the last 4 characters
-        for( uint8_t i=0; i < 4; i++ ) { uart_putc_raw( UART_ID, ID_Wheelmouse[10][i] ); }
-        
       break;
     }
 
-    sleep_us(mouse_data.serialdelay_1B);
+    busy_wait_us(mouse_data.serialdelay_1B);
 }
 
 // Update stored mouse data and post

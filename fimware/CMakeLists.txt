@@ -93,7 +93,3 @@ pico_enable_stdio_usb(usb-2-232-kbd 0)
 pico_enable_stdio_uart(usb-2-232-kbd 1)
 
 pico_add_extra_outputs(usb-2-232-kbd)
-
-# we need to remove the default UART driver since we replace it with our own, and having it
-# in place will cause corruption
-set(PICO_STDIO_UART 0)

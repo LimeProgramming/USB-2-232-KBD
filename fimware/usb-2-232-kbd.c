@@ -1,4 +1,7 @@
 #include "tusb.h"
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
 #include "bsp/board.h"
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -29,19 +32,13 @@ CFG_TUSB_MEM_SECTION static hid_mouse_report_t usb_mouse_report_prev;
 
 static absolute_time_t usb_polling_target;
 
-//uint8_t val = 0;
-//static absolute_time_t din_polling_target;
-//static absolute_time_t ps2_kbd_conn_target;
-
-//unsigned char leds;
-
 /*---------------------------------------*/
 //                  Main                 //
 /*---------------------------------------*/
 int main(){
 
     // Mild under clock
-    set_sys_clock_khz(120000, true);
+    //set_sys_clock_khz(120000, true);
 
     stdio_init_all();           // pico SDK
     board_init();               // init board from TinyUSB
@@ -98,7 +95,6 @@ int main(){
     for ( uint8_t i = 0; i < 6; i++ ) { 
         
       init_pinheader(dipswpins[i]);           // init Dip Switch Pins
-      
       sleep_us(20000);                        // Wait a bit to avoid false positive
 
       // Set up IRQ callbacks on Dip Switch Pins
@@ -122,7 +118,6 @@ int main(){
         kbd_data.kbd_tusb_addr[i][1] = 0;
       }
       
-
       // Clock In
       gpio_init(PS2_CLOCK_IN); 
       gpio_set_dir(PS2_CLOCK_IN, GPIO_IN);
