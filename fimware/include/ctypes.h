@@ -254,7 +254,7 @@ typedef struct  {
   // This can be overwritten but not saved by the PS/2 command set functions.
   // XT keyboard mode will use set 1 regardless of this setting.
   //==-- 1 -> Set 1 | 2 -> set2 (default) | 3 -> set 3 (rarely used)
-  uint8_t kbd_ps2_codeset;
+  //uint8_t kbd_ps2_codeset;
 
 } PERSISTENT_KBD_DATA;
 

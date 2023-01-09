@@ -1,7 +1,5 @@
 #include "tusb.h"
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "bsp/board.h"
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
@@ -490,14 +488,6 @@ void loadPersistentKBDDefaults() {
   // 0 -> IBM XT | 1 --> XT Clone
   if ( (default_xtclone == 0) || (default_xtclone == 1) )     { kbd_data.persistent.kbd_xtclone = default_xtclone; }
   else                                                        { kbd_data.persistent.kbd_xtclone = 1; }
-
-  // Which scan code set should we use while the adapter is an AT keyboard
-  // This can be overwritten but not saved by the PS/2 command set functions.
-  // XT keyboard mode will use set 1 regardless of this setting.
-  // Auto will pick the scan code set based on keyboard type above and the ps2 command set
-  //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set 2 | 3 -> set 3 (rarely used)
-  if ( (default_ps2codeset == 0) || (default_ps2codeset == 1) || (default_ps2codeset == 2) || (default_ps2codeset == 3) ) { kbd_data.persistent.kbd_ps2_codeset = default_ps2codeset; }
-  else                                                                                                                    { kbd_data.persistent.kbd_ps2_codeset = 0; }
 }
 
 // Run on launch 
@@ -729,7 +719,6 @@ void savePersistentSet() {
   buffer[128] =  kbd_data.persistent.firstrun;
   buffer[129] =  kbd_data.persistent.kbd_type;
   buffer[130] =  kbd_data.persistent.kbd_xtclone;
-  buffer[131] =  kbd_data.persistent.kbd_ps2_codeset;
   #endif // enable keyboard
 
   // Halt all interrupts to avoid errors
@@ -815,7 +804,6 @@ void loadPersistentSet() {
   kbd_data.persistent.firstrun = flash_target_contents[j];
   kbd_data.persistent.kbd_type = flash_target_contents[++j];
   kbd_data.persistent.kbd_xtclone = flash_target_contents[++j];
-  kbd_data.persistent.kbd_ps2_codeset = flash_target_contents[++j];
   #endif // keyboard enable
 
   return;
@@ -1330,15 +1318,13 @@ void load_cmd_set_settings() {
   kbd_data.cmd_set.tm_delay = 500;                      // Set Default Typematic delay of 0.5 seconds
   kbd_data.cmd_set.tm_rate = 100;                       // Set Default Typematic rate of 10.9cps
   kbd_data.cmd_set.led_state = AT_KB_LED_NONE;          // Set LED state to none
-
+ 
   // if the set keyboard type is XT
   if ( kbd_data.persistent.kbd_type == 0 ) {
     kbd_data.cmd_set.scancode_set = 0x00;
   // else if persistent set ps2 code set is AUTO
-  } else if ( kbd_data.persistent.kbd_ps2_codeset == 0) {
-    kbd_data.cmd_set.scancode_set = 0x01;
   } else {
-    kbd_data.cmd_set.scancode_set = kbd_data.persistent.kbd_ps2_codeset;
+    kbd_data.cmd_set.scancode_set = 0x01;
   }
 
   return;

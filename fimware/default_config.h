@@ -1,4 +1,4 @@
-#include <stdbool.h>
+
 
 /*---------------------------------------*/
 //                 DEBUG                 //
@@ -150,7 +150,7 @@ static uint8_t default_use_cosine_smoothing = 0;
 /==-- LANGUAGE
 /==-- 0 -> English | 1 -> German 
 */
-static uint8_t default_language = 1;
+static uint8_t default_language = 0;
 
 
 // Added in Version 1 of KBD
@@ -167,7 +167,7 @@ static uint8_t default_xtclone = 1 ;            // 0 -> IBM XT | 1 --> XT Clone
 // XT keyboard mode will use set 1 regardless of this setting.
 // Auto will pick the scan code set based on keyboard type above and the ps2 command set
 //==-- 0 -> AUTO (DEFAULT) | 1 -> Set 1 | 2 -> set2 | 3 -> set 3 (rarely used)
-static uint8_t default_ps2codeset = 0;
+//static uint8_t default_ps2codeset = 0;
 
 
 /*---------------------------------------*/

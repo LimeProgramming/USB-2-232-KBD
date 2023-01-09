@@ -8,15 +8,12 @@ https://www.tayloredge.com/reference/Interface/atkeyboard.pdf
 
 */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "bsp/board.h"
 #include "hardware/gpio.h"
 
 
 #include "utils.h"
 #include "ps2dev.h"
-//#include "hid_app.h"
 #include "din_lookups.h"
 #include <default_config.h>
 

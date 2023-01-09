@@ -1,5 +1,4 @@
 #include "tusb.h"
-#include <stdio.h>
 #include "bsp/board.h"
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -372,9 +371,8 @@ int main(){
             kbd_data.din_polling_target = delayed_by_us( get_absolute_time(), 10000);
            }
         }
-      }
-
-
+      
     #endif
+  }
 
 }

@@ -1,4 +1,4 @@
-#include <stdio.h>
+//#include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/irq.h"
 #include "hardware/uart.h"
@@ -225,22 +225,58 @@ const char terminal_header[2][400] = {
 }
 };
 
-const char terminal_menu_headings[2][5][36] = { 
+// What are valid options for navigating the menu
+#if KB_ENABLE
+
+const uint8_t terminal_valids[7][8] = {
+  { 1, 2, 3, 4, 5, 6},
+  { 1, 2, 3, 4, 5, 6, 7, 8},
+  { 1, 2, 3, 4},
+  { 1, 2, 3, 4},
+  { 1, 2, 3, 4},
+  { 1, 2, 3},
+  { 1, 2}
+};
+
+const char terminal_menus[2][7][248] = {
 { // English
-  { "===== Main Menu =====\n" }, { "===== Mouse Travel =====\n" }, { "===== Mouse Buttons =====\n" }, { "===== Serial Settings =====\n" }, { "===== Firmware =====\n" }
+  { "1: Mouse Travel\n2: Mouse Buttons\n3: Serial Settings\n4: Firmware\n5: Keyboard Settings\n6: Controller Settings\n0: Exit\n" },          // Main Menu
+  { "1: List Config\n2: XY Travel\n3: X Travel\n4: Y Travel\n5: Invert X\n6: Invert Y\n7: Movement Type\n8: Cosine Smoothing\n0: Back\n" },   // Mouse travel
+  { "1: List Config\n2: Swap Left and Right\n3: Use Forward and Backward\n4: Swap Forward and Backward\n0: Back\n" },                         // Mouaw buttons
+  { "1: List Config\n2: Format\n3: Baud Rate\n4: Mouse Type\n0: Back\n" },                                                                    // Serial Settings
+  { "1: Information\n2: Reset\n3: Language\n4: List Default Settings\n0: Back\n"},                                                            // Firmware
+  { "1: List Config\n2: Protocol\n3: XT Compatibility\n0: Back\n" },                                                                          // Keyboard Settings
+  { "1: List Config\n2: Edit Keymap\n0: Back\n" }                                                                                             // Controller Settings
 },
+
 { // German
-  { "===== Hauptmenü =====\n" }, { "===== Mausbewegung =====\n" }, { "===== Maustasten =====\n" }, { "===== Seriell-Einstellungen =====\n" }, { "===== Firmware =====\n" }
+  { "1: Mausbewegung\n2: Maustasten\n3: Seriell-Einstellungen\n4: Firmware\n5: Tastatureinstellungen\n6: Controller-Einstellungen\n0: Beenden\n" },
+  { "1: Konfiguration anzeigen\n2: Zeigergeschwindigkeit in XY Richtung\n3: Zeigergeschwindigkeit in X Richtung\n4: Zeigergeschwindigkeit in Y Richtung\n5: X Invertieren\n6: Y Invertieren\n7: Bewegungsmodus\n8: Dynamische Empfindlichkeit\n0: Zurück\n" },
+  { "1: Konfiguration anzeigen\n2: Links & Rechts tauschen\n3: Seitliche Knöpfe für Links und Rechts verwenden\n4: Seitliche Knöpfe tauschen\n0: Zurück\n" },
+  { "1: Konfiguration anzeigen\n2: Stop-bit Format\n3: BaudRate\n4: Maustyp\n0: Zurück\n" },
+  { "1: Information\n2: Zurücksetzen\n3: Sprache\n4: Standardeinstellungen anzeigen\n0: Zurück\n"},
+  { "1: Konfiguration anzeigen\n2:Protokoll\n3: XT Kompatibilität\n0: Zurück\n"},
+  { "1: Konfiguration anzeigen\n2:Tastenbelegung bearbeiten\n0: Zurück\n"}
 }
+};
+
+#else
+
+const uint8_t terminal_valids[5][8] = {
+  { 1, 2, 3, 4},
+  { 1, 2, 3, 4, 5, 6, 7, 8},
+  { 1, 2, 3, 4},
+  { 1, 2, 3, 4},
+  { 1, 2, 3, 4}
 };
 
 const char terminal_menus[2][5][248] = {
 { // English
-  { "1: Mouse Travel\n2: Mouse Buttons\n3: Serial Settings\n4: Firmware\n0: Exit\n" },
-  { "1: List Config\n2: XY Travel\n3: X Travel\n4: Y Travel\n5: Invert X\n6: Invert Y\n7: Movement Type\n8: Cosine Smoothing\n0: Back\n" },
-  { "1: List Config\n2: Swap Left and Right\n3: Use Forward and Backward\n4: Swap Forward and Backward\n0: Back\n" },
-  { "1: List Config\n2: Format\n3: Baud Rate\n4: Mouse Type\n0: Back\n" },
-  { "1: Information\n2: Reset\n3: Language\n4: List Default Settings\n0: Back\n"}
+  { "1: Mouse Travel\n2: Mouse Buttons\n3: Serial Settings\n4: Firmware\n0: Exit\n" },                                                        // Main Menu
+  { "1: List Config\n2: XY Travel\n3: X Travel\n4: Y Travel\n5: Invert X\n6: Invert Y\n7: Movement Type\n8: Cosine Smoothing\n0: Back\n" },   // Mouse travel
+  { "1: List Config\n2: Swap Left and Right\n3: Use Forward and Backward\n4: Swap Forward and Backward\n0: Back\n" },                         // Mouaw buttons
+  { "1: List Config\n2: Format\n3: Baud Rate\n4: Mouse Type\n0: Back\n" },                                                                    // Serial Settings
+  { "1: Information\n2: Reset\n3: Language\n4: List Default Settings\n0: Back\n"}                                                            // Firmware
 },
 
 { // German
@@ -251,27 +287,19 @@ const char terminal_menus[2][5][248] = {
   { "1: Information\n2: Zurücksetzen\n3: Sprache\n4: Standardeinstellungen anzeigen\n0: Zurück\n"}
 }
 };
+#endif
 
-const uint8_t terminal_valids[5][8] = {
-  { 1, 2, 3, 4},
-  { 1, 2, 3, 4, 5, 6, 7, 8},
-  { 1, 2, 3, 4},
-  { 1, 2, 3, 4},
-  { 1, 2, 3, 4}
-};
 
-const char terminal_guide[2][158] = {
+const char terminal_menu_headings[2][7][39] = { 
 { // English
-  "Use the numbers to navigate menu. Clear screen: CTRL + L | Menu: CTRL + E\nReminder: Changes saved on exit"
+  { "===== Main Menu =====\n" }, { "===== Mouse Travel =====\n" }, { "===== Mouse Buttons =====\n" }, { "===== Serial Settings =====\n" }, { "===== Firmware =====\n" }, { "===== Keyboard Settings =====\n" }, { "===== Controller Settings =====\n" }
 },
 { // German
-  "Nummer des Eintrags tippen, um im Menü zu navigieren.\nBildschirm löschen: STRG + L | Menü: STRG + E\nHinweis: Änderungen werden beim Beenden gespeichert\n"
+  { "===== Hauptmenü =====\n" }, { "===== Mausbewegung =====\n" }, { "===== Maustasten =====\n" }, { "===== Seriell-Einstellungen =====\n" }, { "===== Firmware =====\n" }, { "===== Tastatureinstellungen =====\n" }, { "===== Controller-Einstellungen =====\n"}
 }
 };
 
-const char terminal_prompt[] = ">>> ";
-
-const char terminal_list_options[2][4][7][50] = {
+const char terminal_list_options[2][6][7][50] = {
 { // English
   { // Mouse Travel
     {"XY Travel"},
@@ -294,7 +322,14 @@ const char terminal_list_options[2][4][7][50] = {
   },
   { // Firmware
     {"Language"}
-  }
+  },
+  { // Keyboard Settings
+    {"Protocol"},
+    {"XT Compatibility"}
+  },
+  { //Controller Settings
+    {"Edit Keymap"} 
+  } 
 },
 { // German
   { // Mouse Travel
@@ -316,14 +351,20 @@ const char terminal_list_options[2][4][7][50] = {
     {"BaudRate"},
     {"Maustyp"}
   },
+  { // Keyboard Settings
+    {"Protokoll"},
+    {"XT Kompatibilität"}
+  },
+  { //Controller Settings
+    {"Tastenbelegung bearbeiten"} 
+  },   
   { // Firmware
     {"Sprache"}
   }
 }
 };
 
-
-const char terminal_handle_options[2][4][10][185] = {
+const char terminal_handle_options[2][6][10][185] = {
 { // English
   { // Mouse Travel
     { "Set both X & Y axis mouse travel. Range: 1 -> 200\x25 | Current value:\x20" },
@@ -350,10 +391,16 @@ const char terminal_handle_options[2][4][10][185] = {
     { "Set Serial Mouse Type | Currently:\x20" },
     { "\nOptions: 0 -> MS Two Button | 1 -> Logitech Three Button | 2 -> MS Wheel" }
   },
-
   { // Firmware
     { "Reset all stored settings to default? | 0 -> No | 1 -> Yes\n" },
     { "Set terminal language | 0 -> English | 1 -> German\n" }
+  },
+  { // Keyboard Settings
+    {"Set Keyboard Protocol | 0 -> AT/PS2 | 1 -> XT | Currently:\x20"},
+    {"Set XT Compatibility Mode | 0 -> XT Clone | 1 -> IBM XT | Currently:\x20"}
+  },
+  { //Controller Settings
+    {"I am too sad to work right now"} 
   }
 },
 { // German
@@ -382,13 +429,30 @@ const char terminal_handle_options[2][4][10][185] = {
     { "Setze den Seriellen Maustyp | Momentan:\x20" },
     { "\nOptionen: 0 -> MS Maus | 1 -> Logitech Maus | 2 -> MS Wheel Maus" }
   },
-
   { // Firmware
     { "Alle gespeicherten Änderungen zurücksetzen? 0-> Nein | 1-> Ja\n" },
     { "Terminalsprache: 0 -> Englisch | 1 -> Deutsch\n" }
+  },
+  { // Keyboard Settings
+    {"Setze Keyboard Protocol | 0 -> AT/PS2 | 1 -> XT | Currently:\x20"},
+    {"Setze XT Compatibility Mode | 0 -> XT Clone | 1 -> IBM XT | Currently:\x20"}
+  },
+  { //Controller Settings
+    {"I am too sad to work right now"} 
   }
 }
 };
+
+const char terminal_guide[2][158] = {
+{ // English
+  "Use the numbers to navigate menu. Clear screen: CTRL + L | Menu: CTRL + E\nReminder: Changes saved on exit"
+},
+{ // German
+  "Nummer des Eintrags tippen, um im Menü zu navigieren.\nBildschirm löschen: STRG + L | Menü: STRG + E\nHinweis: Änderungen werden beim Beenden gespeichert\n"
+}
+};
+
+const char terminal_prompt[] = ">>> ";
 
 const char terminal_warn_msg[2][11][80] = {
 { // English
@@ -501,8 +565,10 @@ bool term_menu_option_valid(uint buff, ushort level) {
 }
 
 void term_save_settings(uart_inst_t * com) {
-    term_writes_crlf(com, "Settings will be saved on exit\n");
-    settingsUpdated = true;
+
+  term_writes_crlf(com, terminal_warn_msg[mouse_data.persistent.language][7]);
+  term_writec_crlf(com, '\n');                // New Line
+  settingsUpdated = true;
 }
 
 // Reverse array of chars
@@ -565,7 +631,15 @@ void post_header(uart_inst_t * com) {
     term_writec_crlf(com, '\n');                // New Line
     
     // GitHub
-    term_writes_crlf(com, "GitHub URL: https://github.com/LimeProgramming/USB-serial-mouse-adapter");
+    switch (KB_ENABLE) {
+    case 0:
+      term_writes_crlf(com, "GitHub URL: https://github.com/LimeProgramming/USB-serial-mouse-adapter");
+      break;
+    case 1:
+      term_writes_crlf(com, "GitHub URL: https://github.com/LimeProgramming/USB-2-232-KBD");
+      break;
+    };
+
     term_writec_crlf(com, '\n');                // New Line
     term_writes_crlf(com, "Version: ");         // Version
     term_writes_crlf(com, V_FULL);
