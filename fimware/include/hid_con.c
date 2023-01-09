@@ -303,20 +303,10 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
         // ========== Update ==========
         // If there's enough of a difference in the report for us to care about prcessing the new data.
         if ( gmp_diff_report(&pad_report, &gpd_data.prev_report, 2) ) {
-            //print_binary(pad_report.pad_btns);
-            //printf("        %d", pad_report.pad_btns );
-            //printf("\r\n");
-            //fflush(stdout);
 
             process_gpd_report(dev_addr, instance, &pad_report);
 
-            gpd_data.prev_report = pad_report;
-
-            //TMP
-            //printf("Buttons %04x, LX: %d, LY: %d, RX: %d, RY: %d\n",
-            //    xreport.wButtons, xreport.sThumbLX, xreport.sThumbLY, xreport.sThumbRX, xreport.sThumbRY);
-            //fflush(stdout);            
-
+            gpd_data.prev_report = pad_report;    
         };
     
     } // end if (xid_itf->connected && xid_itf->new_pad_data) 
