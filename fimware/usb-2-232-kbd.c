@@ -23,7 +23,9 @@
 
 MOUSE_DATA mouse_data;
 
+#if KB_ENABLE
 KEYBOARD_DATA kbd_data;
+#endif
 
 GAMEPAD_DATA gpd_data;
 
@@ -51,7 +53,10 @@ int main(){
     init_led(LED_PWR);          // Init Power LED
     gpio_put(LED_PWR, 1);       // Turn on Power LED
     init_led(LED_MOUSE);        // Init Mouse LED
-    init_led(LED_KBD);          // Init KBD LED
+
+    #if KB_ENABLE
+      init_led(LED_KBD);          // Init KBD LED
+    #endif
 
     /*---------------------------------------*/
     //            Reset the flash            //

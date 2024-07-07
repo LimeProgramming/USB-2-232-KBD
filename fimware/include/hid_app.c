@@ -29,11 +29,14 @@ CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
 // ---------- This is executed when a new device is mounted
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {   
 
+    // I don't know, seems to help reduce crashing a bit or might be my imagination.
+    __dsb();
+
     switch ( tuh_hid_interface_protocol(dev_addr, instance) ) {   
 
     // ========== Handle Mouse Mount ==========
     case HID_ITF_PROTOCOL_MOUSE:
-        
+
         // If this is our first mouse
         if ( mouse_data.mouse_count == 0 ) {    gpio_put(LED_MOUSE, 1); };  // Turn on Alert LED
 
@@ -86,6 +89,12 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         // If the device is falling here, it could be a weird mouse/keyboard that gives a generic report but there isn't much we can do (usually) with them since the pico is in boot protocol mode.
         // We can also fall here for controllers. Supported controllers are whitelisted because different controllers give different report.
 
+
+        // Try forcing the device to use the boot protocol.
+        // I'm not convinced that this makes a real difference and that this is more like praying to the USB gods which are too busy making yet another type of USB-C to actually make keyboards work properly.
+        tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)(HID_PROTOCOL_BOOT), 1);
+
+
         #if KB_ENABLE
 
         // Check if device is a whitelisted controller
@@ -111,7 +120,10 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             // Manually tell TinyUSB that we do actually want data from the connected USB device
             // I guess only weirdos want their connected USB device to do something ¯\_(ツ)_/¯
             tuh_hid_receive_report(dev_addr, instance);
-        } 
+        } else {
+            // By default host stack will use activate boot protocol on supported interface.
+            hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info, MAX_HID_REPORT, desc_report, desc_len);
+        }
 
         #endif
 
@@ -137,6 +149,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 // ==================================================
 // ---------- This is executed when a device is unmounted
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {  
+
+    __dsb();
 
     switch ( tuh_hid_interface_protocol(dev_addr, instance) ) {
     
