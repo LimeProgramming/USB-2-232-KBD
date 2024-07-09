@@ -38,15 +38,25 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set path to Pico-SDK
-set(PICO_SDK_PATH "C:/Pico/pico-sdk")
+#set(PICO_SDK_PATH "C:/Pico/pico-sdk")
+#set(PICO_SDK_PATH "C:/Pico/pico-sdk-1.5.0")
+set(PICO_SDK_PATH "C:/Pico/pico-sdk-1.5.1")
+set(PICO_TINYUSB_PATH "C:/Pico/tinyusb-0.16.0")
 
 # For TinyUSB
 set(FAMILY rp2040)
+
+set(CMAKE_BUILD_TYPE "Debug") 
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 # Include pico_sdk_import.cmake from pico-sdk (instead of copying)
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
+set(CMAKE_BUILD_TYPE Debug)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 #set( CMAKE_CXX_FLAGS "-Wall -Wextra")
 #set( CMAKE_C_FLAGS "-Wall -Wextra")

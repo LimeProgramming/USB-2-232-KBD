@@ -2,15 +2,21 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "bsp/board.h"
 #include "pico/stdlib.h"
+
+// Needed to account for update in tinyUSB
+#if __has_include("bsp/board_api.h")
+  #include "bsp/board_api.h"
+#else
+  #include "bsp/board.h"
+#endif
 
 #include "utils.h"
 #include "hid_app.h"
 #include <default_config.h>
 
 // Controllers are not supported if keyboard is not enabled
-#if KB_ENABLE
+#if KB_ENABLE && CON_ENABLE
     #include "hid_con.h"
 #endif
 
@@ -94,8 +100,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         // I'm not convinced that this makes a real difference and that this is more like praying to the USB gods which are too busy making yet another type of USB-C to actually make keyboards work properly.
         tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_OUTPUT, (void*)(HID_PROTOCOL_BOOT), 1);
 
-
-        #if KB_ENABLE
+        #if CON_ENABLE
 
         // Check if device is a whitelisted controller
         if ( is_whitelisted_con(dev_addr) ) {
@@ -124,6 +129,10 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             // By default host stack will use activate boot protocol on supported interface.
             hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info, MAX_HID_REPORT, desc_report, desc_len);
         }
+
+        #else 
+
+        hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info, MAX_HID_REPORT, desc_report, desc_len);
 
         #endif
 
@@ -211,8 +220,16 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
         // Update out keyboard counter for the sake of the ALRT LEDS
         kbd_data.kbd_count = j;
 
+        #if CON_ENABLE
+
         // Turn off KBD LED if no USB Keyboard or Gamepad is connected
         if ( kbd_data.kbd_count == 0 && gpd_data.gpd_con == false ) { gpio_put(LED_KBD, 0); };
+
+        #else 
+
+        if ( kbd_data.kbd_count == 0 ) { gpio_put(LED_KBD, 0); };
+
+        #endif
 
         #endif
     
@@ -221,7 +238,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     // ========== Handle Controller Unmount ==========
     case HID_ITF_PROTOCOL_NONE: 
 
-        #if KB_ENABLE
+        #if CON_ENABLE
 
         // ========== Controller filtering ==========
         // Are we flagged as having a controller connected?
@@ -288,7 +305,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     // ==========  Handle None/Controller Reports ==========
     case HID_ITF_PROTOCOL_NONE: default:  
 
-        #if KB_ENABLE 
+        #if CON_ENABLE 
         
         if ( is_sony_ds4(dev_addr) ) {
             process_sony_ds4(report, len);

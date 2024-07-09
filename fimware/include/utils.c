@@ -1,6 +1,5 @@
 #include "tusb.h"
 #include <math.h>
-#include "bsp/board.h"
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
 #include "hardware/gpio.h"
@@ -8,6 +7,13 @@
 #include "hardware/flash.h"
 #include "pico/binary_info.h"
 #include "hardware/watchdog.h"
+
+// Needed to account for update in tinyUSB
+#if __has_include("bsp/board_api.h")
+  #include "bsp/board_api.h"
+#else
+  #include "bsp/board.h"
+#endif
 
 #include "utils.h"
 #include "core_1.h"
@@ -1082,6 +1088,8 @@ void update_mousepacket() {
   retpkt.wheel  = constraini( mouse_data.rmpkt.wheel, -15, 15);
   retpkt.update = false;
   
+  #if CON_ENABLE
+
   /* ----- Inject Thumbstick movement from Gamepad ----- */
   // ==================================================
   if ( gpd_data.gpd_con ) {
@@ -1104,6 +1112,8 @@ void update_mousepacket() {
     // Increment mouse movement ticker for AVG movement style.
     mouse_data.mouse_movt_ticker++;
   }; // end if ( gpd_data.gpd_con )
+
+  #endif
 
   /* ----- Handle Specific mouse movement options ----- */
   // ==================================================
@@ -1509,6 +1519,8 @@ void delete_kbd_report(hid_keyboard_report_t report) {
 //             GPD Processing            //
 /*---------------------------------------*/
 
+#if CON_ENABLE 
+
 // Called by TinyUSB
 void process_gpd_report(uint8_t dev_addr, uint8_t instance, gamepad_report_t *report) {
   
@@ -1627,7 +1639,8 @@ void process_gpd_report(uint8_t dev_addr, uint8_t instance, gamepad_report_t *re
   return;
 
 }
-  
+
+#endif 
 
 // ==================================================================================================== //
 //                                            DIN port IRQ                                              //

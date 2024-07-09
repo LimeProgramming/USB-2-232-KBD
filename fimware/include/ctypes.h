@@ -328,7 +328,7 @@ typedef struct {
 // Extern value, declared again in usb-2-232.c, can be used everywhere ctypes is included.
 extern KEYBOARD_DATA kbd_data;
 
-
+#if KB_ENABLE && CON_ENABLE 
 /* -------------------- Controller Data -------------------- */
 // ============================================================
 
@@ -408,6 +408,8 @@ typedef struct {
 
 // Extern value, declared again in usb-2-232.c, can be used everywhere ctypes is included.
 extern GAMEPAD_DATA gpd_data;
+
+#endif
 
 /* -------------------- Make the file work stuff -------------------- */
 

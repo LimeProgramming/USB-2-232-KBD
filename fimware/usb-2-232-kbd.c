@@ -2,12 +2,22 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "bsp/board.h"
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
 #include "hardware/timer.h"
 #include "pico/multicore.h"
+
+// Needed to account for update in tinyUSB
+#if __has_include("bsp/board_api.h")
+  #include "bsp/board_api.h"
+#else
+  #include "bsp/board.h"
+#endif
+
+#if CON_ENABLE
+  #include "include/hid_con.h"
+#endif
 
 #include "include/utils.h"
 #include "include/ps2dev.h"
@@ -15,7 +25,6 @@
 #include "include/serial.h"
 #include "include/version.h"
 #include "include/hid_app.h"
-#include "include/hid_con.h"
 #include "default_config.h"
 
 /* ---------------------------------------------------------- */
@@ -27,7 +36,9 @@ MOUSE_DATA mouse_data;
 KEYBOARD_DATA kbd_data;
 #endif
 
+#if CON_ENABLE
 GAMEPAD_DATA gpd_data;
+#endif
 
 // Aggregate movements before sending
 CFG_TUSB_MEM_SECTION static hid_mouse_report_t usb_mouse_report_prev;
@@ -41,6 +52,14 @@ int main(){
 
     // Mild under clock
     //set_sys_clock_khz(120000, true);
+
+    // Mild underclock
+    set_sys_clock_khz(125000, true);
+
+    // If we're using an updated version of TinyUSB then enable the scrollwheel
+    #if __has_include("bsp/board_api.h")
+      tuh_hid_set_default_protocol(HID_PROTOCOL_REPORT);
+    #endif
 
     stdio_init_all();           // pico SDK
     board_init();               // init board from TinyUSB

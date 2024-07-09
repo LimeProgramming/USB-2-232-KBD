@@ -144,7 +144,7 @@ void delete_kbd_report(hid_keyboard_report_t report);
 /*---------------------------------------*/
 //             GPD Processing            //
 /*---------------------------------------*/
-void process_gpd_report(uint8_t dev_addr, uint8_t instance, gamepad_report_t *report);
+void process_gpd_report(uint8_t dev_addr, uint8_t instance, hid_gamepad_report_t *report);
 
 
 #endif

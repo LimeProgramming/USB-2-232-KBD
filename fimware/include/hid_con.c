@@ -1,12 +1,19 @@
 #include "tusb.h"
-#include "bsp/board.h"
 #include "pico/stdlib.h"
+
+// Needed to account for update in tinyUSB
+#if __has_include("bsp/board_api.h")
+  #include "bsp/board_api.h"
+#else
+  #include "bsp/board.h"
+#endif
 
 #include "utils.h"
 #include "hid_con.h"
 #include <default_config.h>
 
 
+#if CON_ENABLE
 
 //--------------------------------------------------------------------+
 //          Controller Detecting Funcs
@@ -208,7 +215,7 @@ void process_sony_psc(uint8_t const* report, uint16_t len) {
     memcpy(&psc_report, report, sizeof(psc_report));
 
     // ========== Buttons ==========
-    // This code sucks so much, my god is it terrible
+    // This code sucks so much, my god it is terrible
     if ( psc_report.square      ) pad_report.pad_btns |= GPAD_BTN_1;
     if ( psc_report.circle      ) pad_report.pad_btns |= GPAD_BTN_2;
     if ( psc_report.cross       ) pad_report.pad_btns |= GPAD_BTN_3;
@@ -412,3 +419,5 @@ void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance) {
 }
 
 #endif // #if CFG_TUH_XINPUT
+
+#endif // CON_ENABLE

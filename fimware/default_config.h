@@ -1,46 +1,9 @@
-
-
 /*---------------------------------------*/
 //                 DEBUG                 //
 /*---------------------------------------*/
 
 // All this really does is give printf's out via UART0
 #define DEBUG true          // Debug Flag for things
-
-
-/*---------------------------------------*/
-//                GPIO PINS              //
-/*---------------------------------------*/
-
-// DIP Switch Pins
-#define DIPSW_THREEBTN 10   // Dip Switch 1 | LOGITECH
-#define DIPSW_WHEEL 11      // Dip Switch 2 | MS Wheel
-#define DIPSW_75XYSPEED 12  // Dip Switch 3 | 75% speed | Dip 3 + 4 depressed will set mouse speed to 25%
-#define DIPSW_50XYSPEED 13  // Dip Switch 4 | 50% speed | Dip 3 + 4 depressed will set mouse speed to 25%
-#define DIPSW_7N2 14        // Dip Switch 5 | 7N2 format
-#define DIPSW_19200 15      // Dip Switch 6 | High Buad Rate
-
-// LEDS 
-#define LED_PWR 2           // Power LED
-#define LED_MOUSE 3         // Mouse LED
-#define LED_KBD 4           // Keybaord LED
-
-//UART stuff
-#define UART_ID uart1       // Use UART1, keep UART0 for DEBUG printing
-#define UART_TX_PIN 8       // UART1 TX --> MAX232 pin 11
-#define UART_RX_PIN 9       // UART1 RX --> MAX232 pin 12
-#define UART_CTS_PIN 6      // CTS      --> MAX232 pin 9
-#define UART_RTS_PIN 7      // RTS      --> MAX232 pin 10
-#define AUX_RTS_PIN 5       // RTS 2
-
-// PS2 GPIO
-#define PS2_CLOCK_IN 19     // Clock signal line in from ps2 port
-#define PS2_CLOCK_OUT 21    // Clock signal line out, trigger NPN to ground clock line
-#define PS2_DATA_IN 20      // Data signal line in from ps2 port
-#define PS2_DATA_OUT 18     // Clock signal line out, trigger NPN to ground clock line
-
-// RESET
-#define RESET_FLASH 17      // Button for resetting the stored settings back to default, defined below.
 
 
 /*---------------------------------------*/
@@ -51,7 +14,7 @@
 #define KB_ENABLE true      // Enable Keyboard
 
 // Max number of usb keyboards supported
-#define KB_MAX_KEYBOARDS  4
+#define KB_MAX_KEYBOARDS  2
 
 // Set your keyboard type (XT type currently not supported)
 //#define KB_TYPE  1          // 0 -> XT | 1 -> AT/PS2
@@ -59,6 +22,73 @@
 // Due to timings, mimicking a real ibmxt might not be possible but we'll try anyway
 // Does not apply to AT/ps2 keyboards
 //#define KB_XTCLONE 1        // 0 -> IBM XT | 1 --> XT Clone
+
+
+/*---------------------------------------*/
+//           Controller Settings         //
+/*---------------------------------------*/
+
+#define CON_ENABLE false
+
+
+/*---------------------------------------*/
+//                GPIO PINS              //
+/*---------------------------------------*/
+
+// Pin setup for the new and old PCB's
+#if KB_ENABLE
+
+    // DIP Switch Pins
+    #define DIPSW_THREEBTN 10   // Dip Switch 1 | LOGITECH
+    #define DIPSW_WHEEL 11      // Dip Switch 2 | MS Wheel
+    #define DIPSW_75XYSPEED 12  // Dip Switch 3 | 75% speed | Dip 3 + 4 depressed will set mouse speed to 25%
+    #define DIPSW_50XYSPEED 13  // Dip Switch 4 | 50% speed | Dip 3 + 4 depressed will set mouse speed to 25%
+    #define DIPSW_7N2 14        // Dip Switch 5 | 7N2 format
+    #define DIPSW_19200 15      // Dip Switch 6 | High Buad Rate
+
+    //UART stuff
+    #define UART_ID uart1       // Use UART1, keep UART0 for DEBUG printing
+    #define UART_TX_PIN 8       // UART1 TX --> MAX232 pin 11
+    #define UART_RX_PIN 9       // UART1 RX --> MAX232 pin 12
+    #define UART_CTS_PIN 6      // CTS      --> MAX232 pin 9
+    #define UART_RTS_PIN 7      // RTS      --> MAX232 pin 10
+    #define AUX_RTS_PIN 5       // RTS 2
+
+
+#else
+
+    // DIP Switch Pins
+    #define DIPSW_THREEBTN 9        // Dip Switch 1 | LOGITECH
+    #define DIPSW_WHEEL 10          // Dip Switch 2 | MS Wheel
+    #define DIPSW_75XYSPEED 11      // Dip Switch 3 | 75% speed | Dip 3 + 4 depressed will set mouse speed to 25%
+    #define DIPSW_50XYSPEED 12      // Dip Switch 4 | 50% speed | Dip 3 + 4 depressed will set mouse speed to 25%
+    #define DIPSW_7N2 13            // Dip Switch 5 | 7N2 format
+    #define DIPSW_19200 14          // Dip Switch 6 | High Buad Rate
+
+    //UART Stuff
+    #define UART_ID uart1       // Use UART1, keep UART0 for DEBUG printing
+    #define UART_TX_PIN 4       // UART1 TX --> MAX232 pin 11
+    #define UART_RX_PIN 5       // UART1 RX --> MAX232 pin 12
+    #define UART_CTS_PIN 6      // CTS      --> MAX232 pin 9
+    #define UART_RTS_PIN 7      // RTS      --> MAX232 pin 10
+
+#endif
+
+
+
+// LEDS 
+#define LED_PWR 2           // Power LED
+#define LED_MOUSE 3         // Mouse LED
+#define LED_KBD 4           // Keybaord LED
+
+// PS2 GPIO
+#define PS2_CLOCK_IN 19     // Clock signal line in from ps2 port
+#define PS2_CLOCK_OUT 21    // Clock signal line out, trigger NPN to ground clock line
+#define PS2_DATA_IN 20      // Data signal line in from ps2 port
+#define PS2_DATA_OUT 18     // Clock signal line out, trigger NPN to ground clock line
+
+// RESET
+#define RESET_FLASH 17      // Button for resetting the stored settings back to default, defined below.
 
 
 /*---------------------------------------*/

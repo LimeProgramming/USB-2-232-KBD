@@ -8,9 +8,14 @@ https://www.tayloredge.com/reference/Interface/atkeyboard.pdf
 
 */
 
-#include "bsp/board.h"
 #include "hardware/gpio.h"
 
+// Needed to account for update in tinyUSB
+#if __has_include("bsp/board_api.h")
+  #include "bsp/board_api.h"
+#else
+  #include "bsp/board.h"
+#endif
 
 #include "utils.h"
 #include "ps2dev.h"
